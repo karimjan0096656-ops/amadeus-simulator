@@ -1,0 +1,102 @@
+[
+  {
+    "iataCode": "EK",
+    "airlineName": "Emirates",
+    "country": "United Arab Emirates"
+  },
+  {
+    "iataCode": "EY",
+    "airlineName": "Etihad Airways",
+    "country": "United Arab Emirates"
+  },
+  {
+    "iataCode": "QR",
+    "airlineName": "Qatar Airways",
+    "country": "Qatar"
+  },
+  {
+    "iataCode": "SV",
+    "airlineName": "Saudia",
+    "country": "Saudi Arabia"
+  },
+  {
+    "iataCode": "MS",
+    "airlineName": "EgyptAir",
+    "country": "Egypt"
+  },
+  {
+    "iataCode": "RJ",
+    "airlineName": "Royal Jordanian",
+    "country": "Jordan"
+  },
+  {
+    "iataCode": "ME",
+    "airlineName": "Middle East Airlines",
+    "country": "Lebanon"
+  },
+  {
+    "iataCode": "GF",
+    "airlineName": "Gulf Air",
+    "country": "Bahrain"
+  },
+  {
+    "iataCode": "KU",
+    "airlineName": "Kuwait Airways",
+    "country": "Kuwait"
+  },
+  {
+    "iataCode": "AT",
+    "airlineName": "Royal Air Maroc",
+    "country": "Morocco"
+  },
+  {
+    "iataCode": "AA",
+    "airlineName": "American Airlines",
+    "country": "United States"
+  },
+  {
+    "iataCode": "DL",
+    "airlineName": "Delta Air Lines",
+    "country": "United States"
+  },
+  {
+    "iataCode": "UA",
+    "airlineName": "United Airlines",
+    "country": "United States"
+  },
+  {
+    "iataCode": "BA",
+    "airlineName": "British Airways",
+    "country": "United Kingdom"
+  },
+  {
+    "iataCode": "LH",
+    "airlineName": "Lufthansa",
+    "country": "Germany"
+  },
+  {
+    "iataCode": "AF",
+    "airlineName": "Air France",
+    "country": "France"
+  },
+  {
+    "iataCode": "KL",
+    "airlineName": "KLM Royal Dutch Airlines",
+    "country": "Netherlands"
+  },
+  {
+    "iataCode": "TK",
+    "airlineName": "Turkish Airlines",
+    "country": "Turkey"
+  },
+  {
+    "iataCode": "SQ",
+    "airlineName": "Singapore Airlines",
+    "country": "Singapore"
+  },
+  {
+    "iataCode": "CX",
+    "airlineName": "Cathay Pacific",
+    "country": "Hong Kong"
+  }
+]
