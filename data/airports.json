@@ -1,0 +1,142 @@
+[
+  {
+    "iataCode": "CAI",
+    "airportNameEn": "Cairo International Airport",
+    "city": "Cairo",
+    "country": "Egypt",
+    "cityCode": "CAI"
+  },
+  {
+    "iataCode": "DXB",
+    "airportNameEn": "Dubai International Airport",
+    "city": "Dubai",
+    "country": "United Arab Emirates",
+    "cityCode": "DXB"
+  },
+  {
+    "iataCode": "AUH",
+    "airportNameEn": "Abu Dhabi International Airport",
+    "city": "Abu Dhabi",
+    "country": "United Arab Emirates",
+    "cityCode": "AUH"
+  },
+  {
+    "iataCode": "DOH",
+    "airportNameEn": "Hamad International Airport",
+    "city": "Doha",
+    "country": "Qatar",
+    "cityCode": "DOH"
+  },
+  {
+    "iataCode": "JED",
+    "airportNameEn": "King Abdulaziz International Airport",
+    "city": "Jeddah",
+    "country": "Saudi Arabia",
+    "cityCode": "JED"
+  },
+  {
+    "iataCode": "RUH",
+    "airportNameEn": "King Khalid International Airport",
+    "city": "Riyadh",
+    "country": "Saudi Arabia",
+    "cityCode": "RUH"
+  },
+  {
+    "iataCode": "KWI",
+    "airportNameEn": "Kuwait International Airport",
+    "city": "Kuwait City",
+    "country": "Kuwait",
+    "cityCode": "KWI"
+  },
+  {
+    "iataCode": "AMM",
+    "airportNameEn": "Queen Alia International Airport",
+    "city": "Amman",
+    "country": "Jordan",
+    "cityCode": "AMM"
+  },
+  {
+    "iataCode": "BEY",
+    "airportNameEn": "Beirut\u2013Rafic Hariri International Airport",
+    "city": "Beirut",
+    "country": "Lebanon",
+    "cityCode": "BEY"
+  },
+  {
+    "iataCode": "CMN",
+    "airportNameEn": "Mohammed V International Airport",
+    "city": "Casablanca",
+    "country": "Morocco",
+    "cityCode": "CAS"
+  },
+  {
+    "iataCode": "TUN",
+    "airportNameEn": "Tunis\u2013Carthage International Airport",
+    "city": "Tunis",
+    "country": "Tunisia",
+    "cityCode": "TUN"
+  },
+  {
+    "iataCode": "MCT",
+    "airportNameEn": "Muscat International Airport",
+    "city": "Muscat",
+    "country": "Oman",
+    "cityCode": "MCT"
+  },
+  {
+    "iataCode": "JFK",
+    "airportNameEn": "John F. Kennedy International Airport",
+    "city": "New York",
+    "country": "United States",
+    "cityCode": "NYC"
+  },
+  {
+    "iataCode": "LHR",
+    "airportNameEn": "Heathrow Airport",
+    "city": "London",
+    "country": "United Kingdom",
+    "cityCode": "LON"
+  },
+  {
+    "iataCode": "CDG",
+    "airportNameEn": "Charles de Gaulle Airport",
+    "city": "Paris",
+    "country": "France",
+    "cityCode": "PAR"
+  },
+  {
+    "iataCode": "FRA",
+    "airportNameEn": "Frankfurt Airport",
+    "city": "Frankfurt",
+    "country": "Germany",
+    "cityCode": "FRA"
+  },
+  {
+    "iataCode": "IST",
+    "airportNameEn": "Istanbul Airport",
+    "city": "Istanbul",
+    "country": "Turkey",
+    "cityCode": "IST"
+  },
+  {
+    "iataCode": "AMS",
+    "airportNameEn": "Amsterdam Airport Schiphol",
+    "city": "Amsterdam",
+    "country": "Netherlands",
+    "cityCode": "AMS"
+  },
+  {
+    "iataCode": "SIN",
+    "airportNameEn": "Singapore Changi Airport",
+    "city": "Singapore",
+    "country": "Singapore",
+    "cityCode": "SIN"
+  },
+  {
+    "iataCode": "ORD",
+    "airportNameEn": "O'Hare International Airport",
+    "city": "Chicago",
+    "country": "United States",
+    "cityCode": "CHI"
+  }
+]
