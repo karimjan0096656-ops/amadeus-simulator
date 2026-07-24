@@ -1,0 +1,306 @@
+[
+  {
+    "iataCode": "CAI",
+    "airportNameEn": "Cairo International Airport",
+    "city": "Cairo",
+    "country": "Egypt",
+    "cityCode": "CAI"
+  },
+  {
+    "iataCode": "DXB",
+    "airportNameEn": "Dubai International Airport",
+    "city": "Dubai",
+    "country": "United Arab Emirates",
+    "cityCode": "DXB"
+  },
+  {
+    "iataCode": "AUH",
+    "airportNameEn": "Abu Dhabi International Airport",
+    "city": "Abu Dhabi",
+    "country": "United Arab Emirates",
+    "cityCode": "AUH"
+  },
+  {
+    "iataCode": "DOH",
+    "airportNameEn": "Hamad International Airport",
+    "city": "Doha",
+    "country": "Qatar",
+    "cityCode": "DOH"
+  },
+  {
+    "iataCode": "JED",
+    "airportNameEn": "King Abdulaziz International Airport",
+    "city": "Jeddah",
+    "country": "Saudi Arabia",
+    "cityCode": "JED"
+  },
+  {
+    "iataCode": "RUH",
+    "airportNameEn": "King Khalid International Airport",
+    "city": "Riyadh",
+    "country": "Saudi Arabia",
+    "cityCode": "RUH"
+  },
+  {
+    "iataCode": "KWI",
+    "airportNameEn": "Kuwait International Airport",
+    "city": "Kuwait City",
+    "country": "Kuwait",
+    "cityCode": "KWI"
+  },
+  {
+    "iataCode": "AMM",
+    "airportNameEn": "Queen Alia International Airport",
+    "city": "Amman",
+    "country": "Jordan",
+    "cityCode": "AMM"
+  },
+  {
+    "iataCode": "BEY",
+    "airportNameEn": "Beirut\u2013Rafic Hariri International Airport",
+    "city": "Beirut",
+    "country": "Lebanon",
+    "cityCode": "BEY"
+  },
+  {
+    "iataCode": "CMN",
+    "airportNameEn": "Mohammed V International Airport",
+    "city": "Casablanca",
+    "country": "Morocco",
+    "cityCode": "CAS"
+  },
+  {
+    "iataCode": "TUN",
+    "airportNameEn": "Tunis\u2013Carthage International Airport",
+    "city": "Tunis",
+    "country": "Tunisia",
+    "cityCode": "TUN"
+  },
+  {
+    "iataCode": "MCT",
+    "airportNameEn": "Muscat International Airport",
+    "city": "Muscat",
+    "country": "Oman",
+    "cityCode": "MCT"
+  },
+  {
+    "iataCode": "JFK",
+    "airportNameEn": "John F. Kennedy International Airport",
+    "city": "New York",
+    "country": "United States",
+    "cityCode": "NYC"
+  },
+  {
+    "iataCode": "LHR",
+    "airportNameEn": "Heathrow Airport",
+    "city": "London",
+    "country": "United Kingdom",
+    "cityCode": "LON"
+  },
+  {
+    "iataCode": "CDG",
+    "airportNameEn": "Charles de Gaulle Airport",
+    "city": "Paris",
+    "country": "France",
+    "cityCode": "PAR"
+  },
+  {
+    "iataCode": "FRA",
+    "airportNameEn": "Frankfurt Airport",
+    "city": "Frankfurt",
+    "country": "Germany",
+    "cityCode": "FRA"
+  },
+  {
+    "iataCode": "IST",
+    "airportNameEn": "Istanbul Airport",
+    "city": "Istanbul",
+    "country": "Turkey",
+    "cityCode": "IST"
+  },
+  {
+    "iataCode": "AMS",
+    "airportNameEn": "Amsterdam Airport Schiphol",
+    "city": "Amsterdam",
+    "country": "Netherlands",
+    "cityCode": "AMS"
+  },
+  {
+    "iataCode": "SIN",
+    "airportNameEn": "Singapore Changi Airport",
+    "city": "Singapore",
+    "country": "Singapore",
+    "cityCode": "SIN"
+  },
+  {
+    "iataCode": "ORD",
+    "airportNameEn": "O'Hare International Airport",
+    "city": "Chicago",
+    "country": "United States",
+    "cityCode": "CHI"
+  }
+]
+[
+  {
+    "iataCode": "EK",
+    "airlineName": "Emirates",
+    "country": "United Arab Emirates"
+  },
+  {
+    "iataCode": "EY",
+    "airlineName": "Etihad Airways",
+    "country": "United Arab Emirates"
+  },
+  {
+    "iataCode": "QR",
+    "airlineName": "Qatar Airways",
+    "country": "Qatar"
+  },
+  {
+    "iataCode": "SV",
+    "airlineName": "Saudia",
+    "country": "Saudi Arabia"
+  },
+  {
+    "iataCode": "MS",
+    "airlineName": "EgyptAir",
+    "country": "Egypt"
+  },
+  {
+    "iataCode": "RJ",
+    "airlineName": "Royal Jordanian",
+    "country": "Jordan"
+  },
+  {
+    "iataCode": "ME",
+    "airlineName": "Middle East Airlines",
+    "country": "Lebanon"
+  },
+  {
+    "iataCode": "GF",
+    "airlineName": "Gulf Air",
+    "country": "Bahrain"
+  },
+  {
+    "iataCode": "KU",
+    "airlineName": "Kuwait Airways",
+    "country": "Kuwait"
+  },
+  {
+    "iataCode": "AT",
+    "airlineName": "Royal Air Maroc",
+    "country": "Morocco"
+  },
+  {
+    "iataCode": "AA",
+    "airlineName": "American Airlines",
+    "country": "United States"
+  },
+  {
+    "iataCode": "DL",
+    "airlineName": "Delta Air Lines",
+    "country": "United States"
+  },
+  {
+    "iataCode": "UA",
+    "airlineName": "United Airlines",
+    "country": "United States"
+  },
+  {
+    "iataCode": "BA",
+    "airlineName": "British Airways",
+    "country": "United Kingdom"
+  },
+  {
+    "iataCode": "LH",
+    "airlineName": "Lufthansa",
+    "country": "Germany"
+  },
+  {
+    "iataCode": "AF",
+    "airlineName": "Air France",
+    "country": "France"
+  },
+  {
+    "iataCode": "KL",
+    "airlineName": "KLM Royal Dutch Airlines",
+    "country": "Netherlands"
+  },
+  {
+    "iataCode": "TK",
+    "airlineName": "Turkish Airlines",
+    "country": "Turkey"
+  },
+  {
+    "iataCode": "SQ",
+    "airlineName": "Singapore Airlines",
+    "country": "Singapore"
+  },
+  {
+    "iataCode": "CX",
+    "airlineName": "Cathay Pacific",
+    "country": "Hong Kong"
+  }
+]
+[
+  {
+    "code": "F",
+    "cabin": "First",
+    "fareType": "Full Fare",
+    "descriptionAr": "الدرجة الأولى بسعرها الكامل، أعلى فئة خدمة وأعلى مرونة في التغيير والاسترجاع."
+  },
+  {
+    "code": "A",
+    "cabin": "First",
+    "fareType": "Discounted",
+    "descriptionAr": "الدرجة الأولى بسعر مخفض، نفس مستوى الخدمة لكن بشروط تغيير واسترجاع أقل مرونة من F."
+  },
+  {
+    "code": "J",
+    "cabin": "Business",
+    "fareType": "Full Fare",
+    "descriptionAr": "درجة رجال الأعمال بسعرها الكامل، مرونة عالية جدًا في التغيير والاسترجاع."
+  },
+  {
+    "code": "C",
+    "cabin": "Business",
+    "fareType": "Standard",
+    "descriptionAr": "درجة رجال الأعمال بسعر قياسي أقل من J، مرونة متوسطة إلى عالية."
+  },
+  {
+    "code": "D",
+    "cabin": "Business",
+    "fareType": "Discounted",
+    "descriptionAr": "درجة رجال الأعمال بسعر مخفض، مرونة أقل من C وJ."
+  },
+  {
+    "code": "Y",
+    "cabin": "Economy",
+    "fareType": "Full Fare",
+    "descriptionAr": "الدرجة السياحية بسعرها الكامل، أعلى مرونة داخل الدرجة السياحية."
+  },
+  {
+    "code": "B",
+    "cabin": "Economy",
+    "fareType": "Discounted",
+    "descriptionAr": "الدرجة السياحية بسعر مخفض عن Y، شروط تغيير أكثر تقييدًا."
+  },
+  {
+    "code": "M",
+    "cabin": "Economy",
+    "fareType": "Discounted",
+    "descriptionAr": "الدرجة السياحية بسعر مخفض أكثر من B، غالبًا مرتبطة بحد أدنى لمدة الإقامة."
+  },
+  {
+    "code": "H",
+    "cabin": "Economy",
+    "fareType": "Discounted",
+    "descriptionAr": "الدرجة السياحية بتخفيض إضافي، شروط حجز وإلغاء أكثر تقييدًا."
+  },
+  {
+    "code": "K",
+    "cabin": "Economy",
+    "fareType": "Deep Discount",
+    "descriptionAr": "أرخص تسعيرة متاحة غالبًا داخل الدرجة السياحية، أقل مرونة في التغيير والاسترجاع."
+  }
+]
