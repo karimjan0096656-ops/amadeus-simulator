@@ -2,9 +2,13 @@
   main.js — نقطة البداية: تحميل ملفات JSON، تفعيل/تعطيل الإدخال،
   عرض الأوامر والردود على الشاشة. لا يحتوي على أي منطق تحليل أو
   تحقق — كل ده مسؤولية parser.js (قسم 7 من الـ Spec).
+
+  المرحلة 3: إضافة أمر داخلي LEVELTEST بيوجّه الإدخال لـ leveltest.js
+  بدل parser.js أثناء الاختبار، من غير ما يلمس parser.js أو pnr.js.
 */
 
 import { initParser, normalizeInput, parseCommand } from './parser.js';
+import { initLevelTest, isTestActive, startLevelTest, handleLevelTestInput } from './leveltest.js';
 
 const outputEl = document.getElementById('output');
 const inputEl = document.getElementById('command-input');
@@ -36,14 +40,16 @@ async function fetchJSON(path) {
 
 async function loadData() {
   try {
-    const [airports, airlines, rbd, flights] = await Promise.all([
+    const [airports, airlines, rbd, flights, levelTestData] = await Promise.all([
       fetchJSON('data/airports.json'),
       fetchJSON('data/airlines.json'),
       fetchJSON('data/rbd.json'),
-      fetchJSON('data/flights.json')
+      fetchJSON('data/flights.json'),
+      fetchJSON('data/level-test.json')
     ]);
 
     initParser({ airports, airlines, rbd, flights });
+    initLevelTest(levelTestData);
 
     inputEl.disabled = false;
     inputEl.focus();
@@ -60,9 +66,16 @@ function handleSubmit() {
   const normalized = normalizeInput(raw);
   appendLine(normalized, 'command-line');
 
-  const response = parseCommand(normalized);
-  appendBlock(response, 'response-line');
+  let response;
+  if (isTestActive()) {
+    response = handleLevelTestInput(normalized);
+  } else if (normalized === 'LEVELTEST') {
+    response = startLevelTest();
+  } else {
+    response = parseCommand(normalized);
+  }
 
+  appendBlock(response, 'response-line');
   appendLine('', 'blank-line');
 
   inputEl.value = '';
