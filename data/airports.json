@@ -138,5 +138,82 @@
     "city": "Chicago",
     "country": "United States",
     "cityCode": "CHI"
-  }
+  },
+  {"iataCode": "SPX", "airportNameEn": "Sphinx International Airport", "city": "Giza", "country": "Egypt", "cityCode": "CAI"},
+  {"iataCode": "ALY", "airportNameEn": "Alexandria International Airport", "city": "Alexandria", "country": "Egypt", "cityCode": "ALY"},
+  {"iataCode": "HRG", "airportNameEn": "Hurghada International Airport", "city": "Hurghada", "country": "Egypt", "cityCode": "HRG"},
+  {"iataCode": "SSH", "airportNameEn": "Sharm El Sheikh International Airport", "city": "Sharm El Sheikh", "country": "Egypt", "cityCode": "SSH"},
+  {"iataCode": "LXR", "airportNameEn": "Luxor International Airport", "city": "Luxor", "country": "Egypt", "cityCode": "LXR"},
+  {"iataCode": "ASW", "airportNameEn": "Aswan International Airport", "city": "Aswan", "country": "Egypt", "cityCode": "ASW"},
+  {"iataCode": "RMF", "airportNameEn": "Marsa Alam International Airport", "city": "Marsa Alam", "country": "Egypt", "cityCode": "RMF"},
+  {"iataCode": "ABS", "airportNameEn": "Abu Simbel Airport", "city": "Abu Simbel", "country": "Egypt", "cityCode": "ABS"},
+  {"iataCode": "SKV", "airportNameEn": "St. Catherine International Airport", "city": "St. Catherine", "country": "Egypt", "cityCode": "SKV"},
+  {"iataCode": "AAC", "airportNameEn": "El Arish International Airport", "city": "El Arish", "country": "Egypt", "cityCode": "AAC"},
+  {"iataCode": "PSD", "airportNameEn": "Port Said Airport", "city": "Port Said", "country": "Egypt", "cityCode": "PSD"},
+  {"iataCode": "ATZ", "airportNameEn": "Assiut Airport", "city": "Assiut", "country": "Egypt", "cityCode": "ATZ"},
+  {"iataCode": "HMB", "airportNameEn": "Sohag International Airport", "city": "Sohag", "country": "Egypt", "cityCode": "HMB"},
+  {"iataCode": "MUH", "airportNameEn": "Marsa Matruh International Airport", "city": "Marsa Matrouh", "country": "Egypt", "cityCode": "MUH"},
+  {"iataCode": "DBB", "airportNameEn": "El Alamein International Airport", "city": "El Dabaa", "country": "Egypt", "cityCode": "DBB"},
+  {"iataCode": "CCE", "airportNameEn": "Capital International Airport", "city": "New Administrative Capital", "country": "Egypt", "cityCode": "CCE"},
+  {"iataCode": "DAK", "airportNameEn": "Dakhla Oasis Airport", "city": "Dakhla Oasis", "country": "Egypt", "cityCode": "DAK"},
+  {"iataCode": "UVL", "airportNameEn": "El Kharga Airport", "city": "El Kharga", "country": "Egypt", "cityCode": "UVL"},
+  {"iataCode": "ELT", "airportNameEn": "El Tor Airport", "city": "El Tor", "country": "Egypt", "cityCode": "ELT"},
+  {"iataCode": "EGH", "airportNameEn": "El Gora Airport", "city": "El Gora", "country": "Egypt", "cityCode": "EGH"},
+  {"iataCode": "GSQ", "airportNameEn": "Sharq El Owainat Airport", "city": "Sharq El Owainat", "country": "Egypt", "cityCode": "GSQ"},
+  {"iataCode": "AUE", "airportNameEn": "Abu Rudeis Airport", "city": "Abu Rudeis", "country": "Egypt", "cityCode": "AUE"},
+  {"iataCode": "RDL", "airportNameEn": "Bardawil International Airport", "city": "El Hassana", "country": "Egypt", "cityCode": "RDL"},
+
+  {"iataCode": "SHJ", "airportNameEn": "Sharjah International Airport", "city": "Sharjah", "country": "United Arab Emirates", "cityCode": "SHJ"},
+  {"iataCode": "RKT", "airportNameEn": "Ras Al Khaimah International Airport", "city": "Ras Al Khaimah", "country": "United Arab Emirates", "cityCode": "RKT"},
+  {"iataCode": "DWC", "airportNameEn": "Al Maktoum International Airport", "city": "Dubai", "country": "United Arab Emirates", "cityCode": "DXB"},
+  {"iataCode": "FJR", "airportNameEn": "Fujairah International Airport", "city": "Fujairah", "country": "United Arab Emirates", "cityCode": "FJR"},
+  {"iataCode": "AAN", "airportNameEn": "Al Ain International Airport", "city": "Al Ain", "country": "United Arab Emirates", "cityCode": "AAN"},
+
+  {"iataCode": "DMM", "airportNameEn": "King Fahd International Airport", "city": "Dammam", "country": "Saudi Arabia", "cityCode": "DMM"},
+  {"iataCode": "MED", "airportNameEn": "Prince Mohammad bin Abdulaziz International Airport", "city": "Medina", "country": "Saudi Arabia", "cityCode": "MED"},
+  {"iataCode": "AHB", "airportNameEn": "Abha International Airport", "city": "Abha", "country": "Saudi Arabia", "cityCode": "AHB"},
+  {"iataCode": "TUU", "airportNameEn": "Prince Sultan bin Abdulaziz Airport", "city": "Tabuk", "country": "Saudi Arabia", "cityCode": "TUU"},
+  {"iataCode": "TIF", "airportNameEn": "Taif International Airport", "city": "Taif", "country": "Saudi Arabia", "cityCode": "TIF"},
+  {"iataCode": "GIZ", "airportNameEn": "King Abdullah bin Abdulaziz International Airport", "city": "Jizan", "country": "Saudi Arabia", "cityCode": "GIZ"},
+  {"iataCode": "HAS", "airportNameEn": "Ha'il International Airport", "city": "Ha'il", "country": "Saudi Arabia", "cityCode": "HAS"},
+  {"iataCode": "YNB", "airportNameEn": "Prince Abdul Mohsin Bin Abdulaziz International Airport", "city": "Yanbu", "country": "Saudi Arabia", "cityCode": "YNB"},
+  {"iataCode": "ELQ", "airportNameEn": "Prince Naif bin Abdulaziz International Airport", "city": "Buraidah", "country": "Saudi Arabia", "cityCode": "ELQ"},
+  {"iataCode": "AJF", "airportNameEn": "Al-Jouf International Airport", "city": "Sakakah", "country": "Saudi Arabia", "cityCode": "AJF"},
+  {"iataCode": "HOF", "airportNameEn": "Al-Ahsa International Airport", "city": "Al-Hofuf", "country": "Saudi Arabia", "cityCode": "HOF"},
+  {"iataCode": "NUM", "airportNameEn": "Neom Bay Airport", "city": "Neom", "country": "Saudi Arabia", "cityCode": "NUM"},
+  {"iataCode": "ULH", "airportNameEn": "Al-Ula International Airport", "city": "Al-Ula", "country": "Saudi Arabia", "cityCode": "ULH"},
+  {"iataCode": "RSI", "airportNameEn": "Red Sea International Airport", "city": "Hanak", "country": "Saudi Arabia", "cityCode": "RSI"},
+
+  {"iataCode": "BAH", "airportNameEn": "Bahrain International Airport", "city": "Manama", "country": "Bahrain", "cityCode": "BAH"},
+
+  {"iataCode": "SLL", "airportNameEn": "Salalah International Airport", "city": "Salalah", "country": "Oman", "cityCode": "SLL"},
+  {"iataCode": "DQM", "airportNameEn": "Duqm International Airport", "city": "Duqm", "country": "Oman", "cityCode": "DQM"},
+  {"iataCode": "KHS", "airportNameEn": "Khasab Airport", "city": "Khasab", "country": "Oman", "cityCode": "KHS"},
+
+  {"iataCode": "ADJ", "airportNameEn": "Amman Civil Airport (Marka)", "city": "Amman", "country": "Jordan", "cityCode": "AMM"},
+  {"iataCode": "AQJ", "airportNameEn": "King Hussein International Airport", "city": "Aqaba", "country": "Jordan", "cityCode": "AQJ"},
+
+  {"iataCode": "DAM", "airportNameEn": "Damascus International Airport", "city": "Damascus", "country": "Syria", "cityCode": "DAM"},
+  {"iataCode": "ALP", "airportNameEn": "Aleppo International Airport", "city": "Aleppo", "country": "Syria", "cityCode": "ALP"},
+  {"iataCode": "LTK", "airportNameEn": "Latakia International Airport", "city": "Latakia", "country": "Syria", "cityCode": "LTK"},
+
+  {"iataCode": "BGW", "airportNameEn": "Baghdad International Airport", "city": "Baghdad", "country": "Iraq", "cityCode": "BGW"},
+  {"iataCode": "EBL", "airportNameEn": "Erbil International Airport", "city": "Erbil", "country": "Iraq", "cityCode": "EBL"},
+  {"iataCode": "NJF", "airportNameEn": "Al Najaf International Airport", "city": "Najaf", "country": "Iraq", "cityCode": "NJF"},
+  {"iataCode": "BSR", "airportNameEn": "Basra International Airport", "city": "Basra", "country": "Iraq", "cityCode": "BSR"},
+
+  {"iataCode": "SAH", "airportNameEn": "Sana'a International Airport", "city": "Sana'a", "country": "Yemen", "cityCode": "SAH"},
+  {"iataCode": "ADE", "airportNameEn": "Aden International Airport", "city": "Aden", "country": "Yemen", "cityCode": "ADE"},
+
+  {"iataCode": "TLV", "airportNameEn": "Ben Gurion Airport", "city": "Tel Aviv", "country": "Israel", "cityCode": "TLV"},
+
+  {"iataCode": "KRT", "airportNameEn": "Khartoum International Airport", "city": "Khartoum", "country": "Sudan", "cityCode": "KRT"},
+
+  {"iataCode": "TIP", "airportNameEn": "Tripoli International Airport", "city": "Tripoli", "country": "Libya", "cityCode": "TIP"},
+  {"iataCode": "BEN", "airportNameEn": "Benina International Airport", "city": "Benghazi", "country": "Libya", "cityCode": "BEN"},
+
+  {"iataCode": "SAW", "airportNameEn": "Istanbul Sabiha Gökçen Airport", "city": "Istanbul", "country": "Turkey", "cityCode": "IST"},
+  {"iataCode": "ESB", "airportNameEn": "Esenboğa International Airport", "city": "Ankara", "country": "Turkey", "cityCode": "ESB"},
+  {"iataCode": "ADB", "airportNameEn": "Adnan Menderes Airport", "city": "Izmir", "country": "Turkey", "cityCode": "ADB"},
+  {"iataCode": "AYT", "airportNameEn": "Antalya Airport", "city": "Antalya", "country": "Turkey", "cityCode": "AYT"}
 ]
