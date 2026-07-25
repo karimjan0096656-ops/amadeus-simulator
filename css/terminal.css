@@ -1,0 +1,85 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background-color: #0d1b2a;
+}
+
+body {
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  color: #7fdbff;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#terminal {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 10px;
+}
+
+#output {
+  flex: 1;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.4;
+  padding-bottom: 10px;
+}
+
+#output div {
+  min-height: 1.4em;
+}
+
+/* ملحوظة: مفيش تلوين مختلف لرسائل الخطأ عن باقي الردود -
+   ده مقصود ومطابق لقسم 10 من الـ Spec ("مفيش تلوين متقدم للأخطاء
+   دلوقتي، كله نفس اللون"). هيتضاف تمييز بصري للأخطاء في المرحلة 5
+   (محرك تصحيح الأخطاء الذكي). */
+.response-line {
+  color: #7fdbff;
+}
+
+.command-line {
+  color: #e0e0e0;
+}
+
+.blank-line {
+  height: 1.4em;
+}
+
+#input-line {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid #1b3a4b;
+  padding-top: 8px;
+}
+
+#prompt {
+  color: #7fdbff;
+  margin-right: 6px;
+  font-weight: bold;
+}
+
+#command-input {
+  flex: 1;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  color: #e0e0e0;
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  caret-color: #7fdbff;
+}
+
+#command-input:disabled {
+  opacity: 0.4;
+}
