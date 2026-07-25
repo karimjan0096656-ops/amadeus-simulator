@@ -1,0 +1,17 @@
+[
+  { "errorMessage": "FORMAT", "category": "خطأ صياغة", "causeAr": "أشهر رسالة خطأ في أماديوس — معناها إن صياغة الأمر نفسها غلط (ترتيب الحروف، علامات الترقيم، أو حقل ناقص).", "correctionAr": "راجع صياغة الأمر بالظبط زي القاعدة المكتوبة، أي فاصلة أو حرف زيادة أو ناقص بيطلع الرسالة دي." },
+  { "errorMessage": "INVALID CLASS", "category": "خطأ بيانات", "causeAr": "الفئة (RBD) اللي طلبتها مش موجودة أصلًا على الرحلة دي.", "correctionAr": "ارجع لشاشة AN وشوف الفئات المتاحة فعليًا على السطر ده قبل ما تعمل SS." },
+  { "errorMessage": "NO SEATS AVAILABLE - WAITLIST OPEN", "category": "خطأ توفر", "causeAr": "الفئة مقفولة تمامًا (صفر مقاعد) لكن فيه إمكانية انتظار.", "correctionAr": "تقدر تعمل LL بدل SS لو عايز تحط الراكب على قائمة الانتظار." },
+  { "errorMessage": "SEGMENT SOLD OUT", "category": "خطأ توفر", "causeAr": "مفيش أي مقاعد ولا حتى انتظار متاح على السطر ده خالص.", "correctionAr": "دور على رحلة بديلة بنفس اليوم أو يوم قريب." },
+  { "errorMessage": "DUPLICATE SEGMENT EXISTS", "category": "خطأ منطقي", "causeAr": "بتحاول تبيع نفس الرحلة أو نفس المسار مرتين لنفس الـ PNR.", "correctionAr": "شوف السطور الموجودة في الـ PNR الأول (بأمر عرض الـ PNR) قبل ما تضيف سطر جديد." },
+  { "errorMessage": "NAME FIELD MANDATORY", "category": "خطأ منطقي (ترتيب)", "causeAr": "بتحاول تنهي الـ PNR (ER/RF) من غير ما تضيف اسم راكب أصلًا.", "correctionAr": "لازم تضيف اسم بأمر NM الأول قبل أي حاجة تانية." },
+  { "errorMessage": "RECEIVED FROM MANDATORY", "category": "خطأ منطقي (ترتيب)", "causeAr": "بتحاول تنهي الحجز من غير عنصر RF (اسم مين اللي طلب الحجز).", "correctionAr": "ضيف RF متبوع بالاسم قبل أمر الإنهاء." },
+  { "errorMessage": "INVALID CITY/AIRPORT CODE", "category": "خطأ بيانات", "causeAr": "كود المطار أو المدينة اللي كتبته مش موجود في النظام (3 حروف غلط أو مش IATA حقيقي).", "correctionAr": "تأكد من كود الـ IATA الصحيح (زي CAI مش CRO مثلًا)." },
+  { "errorMessage": "INVALID FLIGHT NUMBER", "category": "خطأ بيانات", "causeAr": "رقم الرحلة اللي كتبته مش موجود أصلًا لشركة الطيران دي.", "correctionAr": "ارجع لشاشة AN وتأكد من رقم الرحلة بالظبط." },
+  { "errorMessage": "PAST DATE", "category": "خطأ منطقي", "causeAr": "بتحاول تحجز على تاريخ فات فعلًا.", "correctionAr": "تأكد من صياغة التاريخ ومن إنه تاريخ في المستقبل." },
+  { "errorMessage": "INVALID DATE FORMAT", "category": "خطأ صياغة", "causeAr": "صياغة التاريخ غلط (المفروض يوم بحرفين + شهر بـ 3 حروف، زي 15JUL).", "correctionAr": "اكتب التاريخ بالصيغة الصح: رقم اليوم بحرفين وشهر مختصر 3 حروف كابيتال." },
+  { "errorMessage": "MAX 9 PASSENGERS PER SEGMENT", "category": "خطأ منطقي", "causeAr": "بتحاول تحجز أكتر من 9 ركاب على نفس السطر في عملية واحدة.", "correctionAr": "قسّم المجموعة لأكتر من طلب لو عدد الركاب أكتر من 9." },
+  { "errorMessage": "ITEM NOT FOUND / NO PNR", "category": "خطأ منطقي", "causeAr": "بتحاول تسترجع أو تعدّل PNR مش موجود أصلًا أو الرقم غلط.", "correctionAr": "تأكد من رقم الـ PNR الصحيح (6 حروف/أرقام)." },
+  { "errorMessage": "UNABLE TO PROCESS - PLEASE VERIFY ENTRY", "category": "خطأ عام", "causeAr": "رسالة عامة بترجع لما فيه حاجة في الأمر مش مفهومة للنظام، مش دايمًا واضح مكان الغلط بالظبط.", "correctionAr": "راجع الأمر كله سطر سطر، وابدأ بالتأكد من كود المطارات وأرقام الرحلات." },
+  { "errorMessage": "TICKETING ARRANGEMENT MANDATORY", "category": "خطأ منطقي (ترتيب)", "causeAr": "بتحاول تنهي PNR من غير ما تضيف عنصر TK (آخر موعد لإصدار التذكرة).", "correctionAr": "ضيف عنصر TK قبل الإنهاء، حتى لو كان TKOK (يعني التذكرة هتتصدر فورًا)." }
+]
