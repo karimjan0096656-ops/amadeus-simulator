@@ -1,0 +1,122 @@
+[
+  {
+    "flightId": "F001",
+    "airlineCode": "MS",
+    "flightNumber": "959",
+    "origin": "CAI",
+    "destination": "DXB",
+    "departureDate": "15JUL",
+    "departureTime": "0820",
+    "arrivalTime": "1210",
+    "aircraftType": "788",
+    "availability": {"F":0,"A":0,"J":9,"C":6,"D":2,"Y":9,"B":9,"M":7,"H":4,"K":0}
+  },
+  {
+    "flightId": "F002",
+    "airlineCode": "MS",
+    "flightNumber": "971",
+    "origin": "CAI",
+    "destination": "DXB",
+    "departureDate": "15JUL",
+    "departureTime": "1430",
+    "arrivalTime": "1830",
+    "aircraftType": "738",
+    "availability": {"F":0,"A":0,"J":4,"C":0,"D":0,"Y":9,"B":5,"M":0,"H":0,"K":0}
+  },
+  {
+    "flightId": "F003",
+    "airlineCode": "EK",
+    "flightNumber": "925",
+    "origin": "CAI",
+    "destination": "DXB",
+    "departureDate": "15JUL",
+    "departureTime": "1340",
+    "arrivalTime": "1730",
+    "aircraftType": "77W",
+    "availability": {"F":4,"A":2,"J":9,"C":9,"D":9,"Y":9,"B":9,"M":9,"H":9,"K":9}
+  },
+  {
+    "flightId": "F004",
+    "airlineCode": "EK",
+    "flightNumber": "929",
+    "origin": "CAI",
+    "destination": "DXB",
+    "departureDate": "15JUL",
+    "departureTime": "1900",
+    "arrivalTime": "2250",
+    "aircraftType": "359",
+    "availability": {"F":2,"A":0,"J":9,"C":9,"D":6,"Y":9,"B":9,"M":9,"H":3,"K":0}
+  },
+  {
+    "flightId": "F005",
+    "airlineCode": "MS",
+    "flightNumber": "653",
+    "origin": "CAI",
+    "destination": "JED",
+    "departureDate": "15JUL",
+    "departureTime": "0630",
+    "arrivalTime": "0830",
+    "aircraftType": "738",
+    "availability": {"F":0,"A":0,"J":9,"C":7,"D":3,"Y":9,"B":9,"M":6,"H":0,"K":0}
+  },
+  {
+    "flightId": "F006",
+    "airlineCode": "SV",
+    "flightNumber": "331",
+    "origin": "CAI",
+    "destination": "JED",
+    "departureDate": "15JUL",
+    "departureTime": "1000",
+    "arrivalTime": "1215",
+    "aircraftType": "32N",
+    "availability": {"F":0,"A":0,"J":6,"C":0,"D":0,"Y":9,"B":9,"M":9,"H":5,"K":0}
+  },
+  {
+    "flightId": "F007",
+    "airlineCode": "MS",
+    "flightNumber": "655",
+    "origin": "CAI",
+    "destination": "JED",
+    "departureDate": "15JUL",
+    "departureTime": "1600",
+    "arrivalTime": "1810",
+    "aircraftType": "320",
+    "availability": {"F":0,"A":0,"J":4,"C":2,"D":0,"Y":9,"B":4,"M":0,"H":0,"K":0}
+  },
+  {
+    "flightId": "F008",
+    "airlineCode": "EK",
+    "flightNumber": "001",
+    "origin": "DXB",
+    "destination": "LHR",
+    "departureDate": "15JUL",
+    "departureTime": "0325",
+    "arrivalTime": "0755",
+    "aircraftType": "388",
+    "availability": {"F":4,"A":2,"J":9,"C":9,"D":9,"Y":9,"B":9,"M":9,"H":9,"K":6}
+  },
+  {
+    "flightId": "F009",
+    "airlineCode": "BA",
+    "flightNumber": "106",
+    "origin": "DXB",
+    "destination": "LHR",
+    "departureDate": "15JUL",
+    "departureTime": "0830",
+    "arrivalTime": "1245",
+    "aircraftType": "77W",
+    "availability": {"F":0,"A":0,"J":9,"C":6,"D":0,"Y":9,"B":9,"M":5,"H":0,"K":0}
+  },
+  {
+    "flightId": "F010",
+    "airlineCode": "EK",
+    "flightNumber": "007",
+    "origin": "DXB",
+    "destination": "LHR",
+    "departureDate": "15JUL",
+    "departureTime": "1420",
+    "arrivalTime": "1850",
+    "aircraftType": "77W",
+    "availability": {"F":3,"A":1,"J":9,"C":9,"D":4,"Y":9,"B":9,"M":9,"H":6,"K":0}
+  }
+]
