@@ -1,0 +1,7 @@
+[
+  { "id": 1, "prompt": "دور على توفر رحلات من القاهرة لدبي يوم 15 يوليو", "expectedCommand": "AN15JULCAIDXB" },
+  { "id": 2, "prompt": "بيع مقعد من السطر 3 في فئة Y، مقعد واحد", "expectedCommand": "SS3Y1" },
+  { "id": 3, "prompt": "سجّل اسم الراكب: FARID MALIK، لقبه MR", "expectedCommand": "NM1FARID/MALIK MR" },
+  { "id": 4, "prompt": "أضف بيانات اتصال: مدينة CAI، رقم 1234567", "expectedCommand": "AP CAI 1234567" },
+  { "id": 5, "prompt": "أنهي الحجز بالكامل (ترتيب الإصدار + استلام من MALIK + الحفظ)", "expectedCommand": ["TKOK", "RF MALIK", "ER"] }
+]
