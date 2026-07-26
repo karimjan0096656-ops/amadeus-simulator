@@ -79,6 +79,11 @@ body {
   font-size: 16px;
   caret-color: #7fdbff;
 }
+.error-flow-line {
+  color: #d9a441;
+  opacity: 0.92;
+  font-style: italic;
+}
 
 #command-input:disabled {
   opacity: 0.4;
