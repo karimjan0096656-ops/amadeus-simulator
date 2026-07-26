@@ -14,11 +14,31 @@
      الأوامر العادية (isRegularCommand=true)، يعني أبدًا مش وقت
      LEVELTEST نشط ولا وقت بدء LEVELTEST. مفيش أي تغيير في مسار
      isTestActive()/startLevelTest() خالص.
+
+  === إضافة المرحلة 6 (الأسعار) ===
+  ⚠ فرق مهم عن سبك المرحلة 6 لازم Malik ياخد باله منه: قسم 5 من
+  السبك قال "main.js مفيش أي تعديل متوقع فيه" لأن الأوامر الجديدة
+  (FQD, FXP) بتمر من نفس مسار parseCommand() الموجود بالفعل — وده
+  صح جزئيًا بس. لسه في تعديل واحد ضروري لازم يحصل هنا، وإلا محرك
+  التسعير هيفضل من غير أي بيانات خالص:
+
+  parser.js بيستورد getFareQuote/getFareForBookingClass من pricing.js،
+  وpricing.js مالوش أي بيانات إلا لما حد ينادي initPricing(data) —
+  بالظبط زي initParser/initLevelTest/initErrors. من غير إضافة تحميل
+  data/fares.json هنا ونداء initPricing() بيه، هتفضل faresData في
+  pricing.js فاضية للأبد، وأي أمر FQD أو FXP هيرجع "مفيش أسعار"
+  (NO FARES FOUND FOR CITY PAIR) دايمًا حتى لو المسار موجود فعلًا
+  في fares.json. ده مش تغيير في منطق التوجيه أو handleSubmit — بس
+  إضافة سطرين في Promise.all وسطر initPricing واحد، بنفس نمط باقي
+  الملفات اللي بتتحمّل بالفعل. لو حابب تتأكد بنفسك: امسح السطرين
+  دول مؤقتًا وجرب FQDCAIDXB في المتصفح، هيرجع "مفيش أسعار" حتى لو
+  fares.json موجود ومليان بيانات صحيحة.
 */
 
 import { initParser, normalizeInput, parseCommand } from './parser.js';
 import { initLevelTest, isTestActive, startLevelTest, handleLevelTestInput } from './leveltest.js';
 import { initErrors, handleErrorFlow } from './errors.js';
+import { initPricing } from './pricing.js'; // إضافة المرحلة 6
 
 const outputEl = document.getElementById('output');
 const inputEl = document.getElementById('command-input');
@@ -50,18 +70,20 @@ async function fetchJSON(path) {
 
 async function loadData() {
   try {
-    const [airports, airlines, rbd, flights, levelTestData, errorsData] = await Promise.all([
+    const [airports, airlines, rbd, flights, levelTestData, errorsData, faresData] = await Promise.all([
       fetchJSON('data/airports.json'),
       fetchJSON('data/airlines.json'),
       fetchJSON('data/rbd.json'),
       fetchJSON('data/flights.json'),
       fetchJSON('data/level-test.json'),
-      fetchJSON('data/errors.json')
+      fetchJSON('data/errors.json'),
+      fetchJSON('data/fares.json') // إضافة المرحلة 6
     ]);
 
     initParser({ airports, airlines, rbd, flights });
     initLevelTest(levelTestData);
     initErrors(errorsData);
+    initPricing(faresData); // إضافة المرحلة 6
 
     inputEl.disabled = false;
     inputEl.focus();
