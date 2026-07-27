@@ -47,6 +47,23 @@
   2) ترتيب حقول HA/CA اتصحح لـ "مدينة ثم تاريخ" (HACAI15JUL) بدل
      ترتيب السبك الأصلي "تاريخ ثم مدينة"، عشان يطابق كل الأمثلة
      الحقيقية اللي لقيتها من Amadeus (تفاصيل كاملة في ancillary.js).
+
+  === إضافة المرحلة 8 (إدارة الطوابير) ===
+  أوامر المرحلة دي (QT, QC, QS, QN, QI, QE) كلها حرفين بالظبط، فمفيش
+  تعقيد زي FQD/FXP — بس إضافة الستة أكواد لنفس مصفوفة COMMAND_CODES
+  الموجودة، وست حالات (case) جديدة في نفس الـ switch، وست دوال handle
+  جديدة في آخر الملف (نفس نمط المرحلة 7 بالظبط).
+
+  ⚠ استثناء واحد بس لقاعدة "مفيش لمس لأي دالة handle موجودة" (موثّق
+  بالتفصيل الكامل في تعليق queues.js): handleER() اتضاف لها التقاط
+  لقطة بسيطة (اسم الراكب + Record Locator) قبل نداء endAndRetrieve()
+  مباشرة، لأن الدالة دي بتصفّر الـ PNR تلقائيًا (resetPNR()) في آخرها
+  بعد كل نجاح — من غير اللقطة دي، أمر QE (قسم 4.7 من سبك المرحلة 8)
+  مش هيلاقي أي بيانات يحطها على الطابور فورًا بعد ER. اللقطة بتتاخد
+  قبل النداء، وبتتخزن بعد النجاح بس؛ رسالة endAndRetrieve() ومنطقها
+  الداخلي (الشيكات الخمسة، ترتيب السطور، إلخ) فضلوا زي ما هم بالظبط
+  من غير أي تغيير — القيمة المُرجعة لـ handleER() نفسها متطابقة حرفيًا
+  زي الأصل.
 */
 
 import {
@@ -72,14 +89,22 @@ import {
   addNightsToDate
 } from './ancillary.js';
 
+// === إضافة المرحلة 8 ===
+import {
+  getQueueTableDisplay,
+  getQueueCountDisplay,
+  startQueueBrowse,
+  addPnrToQueue
+} from './queues.js';
+
 const COMMAND_CODES = [
   'AN', 'SS', 'NM', 'AP', 'TK', 'RF', 'ER',
   // === إضافة المرحلة 7 ===
-  'HA', 'HS', 'CA', 'CS', 'SR', 'TI'
+  'HA', 'HS', 'CA', 'CS', 'SR', 'TI',
+  // === إضافة المرحلة 8 ===
+  'QT', 'QC', 'QS', 'QN', 'QI', 'QE'
 ];
 
-// أوامر المرحلة 6 (التسعير) — كودها 3 حروف، فحص منفصل عن الحرفين
-// (راجع الملحوظة فوق).
 const THREE_LETTER_COMMAND_CODES = ['FQD', 'FXP'];
 
 let airportsData = [];
@@ -87,14 +112,16 @@ let airlinesData = [];
 let flightsData = [];
 let rbdCodes = [];
 
-// آخر عرض توفر (AN) ناجح — session state في الذاكرة، مش localStorage (قسم 4.1)
-let lastAvailabilityDisplay = null; // { origin, destination, date, flights: [...] } أو null
+let lastAvailabilityDisplay = null;
+let lastHotelAvailabilityDisplay = null;
+let lastCarAvailabilityDisplay = null;
 
-// === إضافة المرحلة 7: نفس فلسفة lastAvailabilityDisplay، بس متغيرات
-// منفصلة تمامًا عشان عرض الفنادق/السيارات ما يبوّظش عرض الرحلات لو
-// المتدرب عمل AN وبعدين HA أو CA في نفس الجلسة (أو العكس) ===
-let lastHotelAvailabilityDisplay = null; // { cityCode, checkInDate, hotels: [...] } أو null
-let lastCarAvailabilityDisplay = null; // { cityCode, pickupDate, cars: [...] } أو null
+// === إضافة المرحلة 8: لقطة آخر PNR اتعمله ER بنجاح في الجلسة دي،
+// عشان QE يقدر يستخدمها بعد ما pnr.js يكون صفّر الحالة الحقيقية.
+// راجع تعليق أعلى الملف وتعليق queues.js للتفاصيل الكاملة. بتفضل
+// موجودة (من غير مسح تلقائي) لحد ما ER تاني ينجح — يعني تقدر تحط نفس
+// الـ PNR على أكتر من طابور بأكتر من QE لو حبيت، زي أماديوس الحقيقي. ===
+let lastCompletedPnr = null;
 
 export function initParser(data) {
   airportsData = data.airports || [];
@@ -103,12 +130,10 @@ export function initParser(data) {
 
   rbdCodes = extractRbdCodes(data.rbd);
   if (rbdCodes.length !== 10) {
-    // خط دفاع احتياطي — الترتيب ده منصوص عليه حرفيًا في الـ Spec (قسم 3.1)
     rbdCodes = ['F', 'A', 'J', 'C', 'D', 'Y', 'B', 'M', 'H', 'K'];
   }
 }
 
-// استخراج أكواد RBD من rbd.json بشكل مرن (بيتحمّل أشكال بيانات مختلفة)
 function extractRbdCodes(rbdData) {
   if (!Array.isArray(rbdData)) return [];
   return rbdData
@@ -132,7 +157,6 @@ export function normalizeInput(raw) {
 }
 
 export function parseCommand(cmd) {
-  // === إضافة المرحلة 6: فحص أوامر التسعير (3 حروف) قبل منطق الحرفين ===
   const threeCode = cmd.slice(0, 3);
   if (THREE_LETTER_COMMAND_CODES.includes(threeCode)) {
     switch (threeCode) {
@@ -144,7 +168,6 @@ export function parseCommand(cmd) {
         return 'UNKNOWN COMMAND';
     }
   }
-  // === نهاية إضافة المرحلة 6 — كل اللي تحت ده هو الكود الأصلي زي ما هو ===
 
   const code = cmd.slice(0, 2);
 
@@ -167,7 +190,6 @@ export function parseCommand(cmd) {
       return handleRF(cmd);
     case 'ER':
       return handleER(cmd);
-    // === إضافة المرحلة 7 ===
     case 'HA':
       return handleHA(cmd);
     case 'HS':
@@ -180,6 +202,19 @@ export function parseCommand(cmd) {
       return handleSR(cmd);
     case 'TI':
       return handleTI(cmd);
+    // === إضافة المرحلة 8 ===
+    case 'QT':
+      return handleQT(cmd);
+    case 'QC':
+      return handleQC(cmd);
+    case 'QS':
+      return handleQS(cmd);
+    case 'QN':
+      return handleQN(cmd);
+    case 'QI':
+      return handleQI(cmd);
+    case 'QE':
+      return handleQE(cmd);
     default:
       return 'UNKNOWN COMMAND';
   }
@@ -313,13 +348,30 @@ function handleRF(cmd) {
 /* ---------------- ER ---------------- */
 function handleER(cmd) {
   if (cmd !== 'ER') return 'FORMAT';
+
+  // === إضافة المرحلة 8 — راجع الشرح الكامل أعلى الملف وفي queues.js ===
+  // لازم نلقط اسم الراكب قبل نداء endAndRetrieve() لأنها بتصفّر الـ
+  // PNR (resetPNR()) في آخرها تلقائيًا بعد أي نجاح. اللقطة دي مالهاش
+  // أي تأثير على منطق endAndRetrieve() ولا على القيمة المُرجعة هنا.
+  const nameSnapshot = getCurrentPNR().name;
+
   const result = endAndRetrieve();
+
+  if (result.success) {
+    const locatorMatch = result.message.match(/RECORD LOCATOR:\s*([A-Z]{6})/);
+    if (locatorMatch && nameSnapshot) {
+      const titlePart = nameSnapshot.title ? ` ${nameSnapshot.title}` : '';
+      lastCompletedPnr = {
+        recordLocator: locatorMatch[1],
+        passengerName: `${nameSnapshot.lastName}/${nameSnapshot.firstName}${titlePart}`
+      };
+    }
+  }
+
   return result.message;
 }
 
 /* ---------------- FQD (المرحلة 6) ---------------- */
-// FQDCAIDXB — من غير أي مسافات (نفس فلسفة AN_REGEX بتاعة "لصيق من
-// غير مسافة" — راجع ملحوظة errors.js رقم 3 عن نفس الموضوع في AN).
 const FQD_REGEX = /^FQD([A-Z]{3})([A-Z]{3})$/;
 
 function handleFQD(cmd) {
@@ -328,8 +380,6 @@ function handleFQD(cmd) {
 
   const [, origin, destination] = match;
 
-  // نفس منطق التحقق من كود المطار الموجود في handleAN بالظبط (من غير
-  // ما نلمس handleAN نفسها) — عشان تجربة الخطأ تبقى متسقة (قسم 6 حالة 6).
   if (!airportsData.some((a) => a.iataCode === origin)) {
     return `UNKNOWN CITY/AIRPORT ${origin}`;
   }
@@ -364,16 +414,11 @@ function handleFQD(cmd) {
 }
 
 /* ---------------- FXP (المرحلة 6) ---------------- */
-// FXP من غير أي باراميترات إضافية — بتسعّر آخر Segment محجوز في الـ
-// PNR الحالي (قسم 3 من السبك: getCurrentPNR() اللي أصلًا اتصدّرت من
-// pnr.js في المرحلة 2 عشان بالظبط الاستخدامات زي دي).
 function handleFXP(cmd) {
   if (cmd !== 'FXP') return 'FORMAT';
 
   const currentPnr = getCurrentPNR();
   if (currentPnr.segments.length === 0) {
-    // نفس رسالة ER بالظبط لما مفيش Segment (pnr.js) — عشان errors.js
-    // يصنّفها بنفس الفئة من غير ما نحتاج نضيف مفتاح جديد في errors.json.
     return 'NO ITINERARY SEGMENTS';
   }
 
@@ -399,11 +444,6 @@ function handleFXP(cmd) {
 
 /* ================== المرحلة 7 — الخدمات الإضافية ================== */
 
-/* ---------------- HA (Hotel Availability) ----------------
-   الصياغة المصحّحة: HA + كود مدينة (3 حروف) + تاريخ (يوم حرفين +
-   شهر 3 حروف)، لصيق من غير مسافات — زي HACAI15JUL. (السبك الأصلي
-   كان مفترض ترتيب عكسي "تاريخ ثم مدينة"؛ راجع تعليق ancillary.js
-   للتفصيل الكامل لسبب التصحيح.) */
 const HA_REGEX = /^HA([A-Z]{3})(\d{2})(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$/;
 
 function handleHA(cmd) {
@@ -414,8 +454,6 @@ function handleHA(cmd) {
   const day = parseInt(dayStr, 10);
   if (day < 1 || day > 31) return 'FORMAT';
 
-  // نفس منطق التحقق من كود المطار الموجود في handleAN بالظبط (من غير
-  // ما نلمس handleAN نفسها) — نفس أسلوب FQD/FXP في المرحلة اللي فاتت.
   if (!airportsData.some((a) => a.iataCode === cityCode)) {
     return `UNKNOWN CITY/AIRPORT ${cityCode}`;
   }
@@ -443,9 +481,6 @@ function handleHA(cmd) {
   return lines.join('\n');
 }
 
-/* ---------------- HS (Hotel Sell) ----------------
-   الصياغة زي ما هي في السبك بالظبط: HS + رقم السطر + N (Nights) +
-   عدد الليالي، لصيق من غير مسافات — زي HS1N3. */
 const HS_REGEX = /^HS(\d{1,2})N(\d{1,2})$/;
 
 function handleHS(cmd) {
@@ -461,7 +496,6 @@ function handleHS(cmd) {
   if (lineNum < 1 || lineNum > hotelsShown.length) return 'INVALID LINE NUMBER';
 
   const nights = parseInt(nightsStr, 10);
-  // دفاع احتياطي بسيط زي ما هو منصوص في السبك (قسم 3.2): 1-30 ليلة منطقية.
   if (nights < 1 || nights > 30) return 'FORMAT';
 
   const hotel = hotelsShown[lineNum - 1];
@@ -485,11 +519,6 @@ function handleHS(cmd) {
   return result.message;
 }
 
-/* ---------------- CA (Car Availability) ----------------
-   ⚠ تصحيح اسم الأمر عن السبك: السبك افترض VC، لكن الكود الحقيقي هو
-   CA (اتأكد من مصدرين مستقلين — راجع تعليق ancillary.js). نفس منطق
-   HA بالظبط (مدينة + تاريخ استلام، لصيق من غير مسافات) — زي
-   CADXB15JUL. */
 const CA_REGEX = /^CA([A-Z]{3})(\d{2})(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$/;
 
 function handleCA(cmd) {
@@ -526,10 +555,6 @@ function handleCA(cmd) {
   return lines.join('\n');
 }
 
-/* ---------------- CS (Car Sell) ----------------
-   ⚠ تصحيح اسم الأمر عن السبك: السبك افترض VS، لكن الكود الحقيقي هو
-   CS (نفس المصدرين المذكورين فوق). نفس منطق HS بالظبط بس بالأيام
-   بدل الليالي — CS + رقم السطر + D (Days) + عدد الأيام، زي CS1D3. */
 const CS_REGEX = /^CS(\d{1,2})D(\d{1,2})$/;
 
 function handleCS(cmd) {
@@ -568,7 +593,6 @@ function handleCS(cmd) {
   return result.message;
 }
 
-/* ---------------- SR (Special Service Request) ---------------- */
 const SR_REGEX = /^SR([A-Z]{4})$/;
 
 function handleSR(cmd) {
@@ -580,15 +604,6 @@ function handleSR(cmd) {
   const ssrInfo = getSSRInfo(code);
   if (!ssrInfo) return 'INVALID SSR CODE';
 
-  // لازم يكون فيه راكب مسجل بالفعل قبل ما تضيف SSR (قسم 3.5 من
-  // السبك). السبك قال "استخدم نفس رسالة NAME FIELD MANDATORY
-  // الموجودة أصلًا" — لكن الرسالة اللي بيرجعها pnr.js فعليًا لنفس
-  // الحالة هي 'PNR EMPTY - NEED NAME' مش 'NAME FIELD MANDATORY'
-  // (اللي أصلًا مجرد categoryCode/matchKey في errors.json، مش نص
-  // بيترجع من أي كود حقيقي). استخدمنا هنا 'PNR EMPTY - NEED NAME'
-  // (الموجودة فعليًا) عشان يبقى فيه رسالة واحدة بس لكل نفس الحالة في
-  // كل المشروع، وبرضه بتتصنّف صح من غير أي تعديل في errors.json لأن
-  // الاتنين أصلًا matchKeys لنفس التصنيف.
   if (getCurrentPNR().name === null) {
     return 'PNR EMPTY - NEED NAME';
   }
@@ -597,9 +612,6 @@ function handleSR(cmd) {
   return result.message;
 }
 
-/* ---------------- TI (Timatic Query — مبسّط) ----------------
-   استعلام معلومات بس، زي FQD تمامًا — مش مرتبط بالـ PNR خالص، مفيش
-   حاجة بتتخزن. الافتراض الثابت (قسم 6.4 من السبك): جواز سفر مصري. */
 const TI_REGEX = /^TI([A-Z]{3})$/;
 
 function handleTI(cmd) {
@@ -623,4 +635,84 @@ function handleTI(cmd) {
   lines.push(`HEALTH: ${info.healthNoteAr}`);
 
   return lines.join('\n');
+}
+
+/* ================== المرحلة 8 — إدارة الطوابير ================== */
+
+/* ---------------- QT (Queue Table) ---------------- */
+function handleQT(cmd) {
+  if (cmd !== 'QT') return 'FORMAT';
+  return getQueueTableDisplay();
+}
+
+/* ---------------- QC (Queue Count) ----------------
+   QC + رقم طابور (بدون فئة، يجمع كل الفئات) أو QC + رقم + C + فئة
+   (فئة محددة)، زي QC8 أو QC1C2. */
+const QC_REGEX = /^QC(\d{1,2})(?:C(\d{1,2}))?$/;
+
+function handleQC(cmd) {
+  const match = cmd.match(QC_REGEX);
+  if (!match) return 'FORMAT';
+
+  const [, queueNumStr, categoryStr] = match;
+  const queueNumber = parseInt(queueNumStr, 10);
+  const category = categoryStr !== undefined ? parseInt(categoryStr, 10) : null;
+
+  return getQueueCountDisplay(queueNumber, category);
+}
+
+/* ---------------- QS (Queue Start / browse) ----------------
+   القسم إلزامي هنا (بعكس QC) — QS1C0 مثلًا. */
+const QS_REGEX = /^QS(\d{1,2})C(\d{1,2})$/;
+
+function handleQS(cmd) {
+  const match = cmd.match(QS_REGEX);
+  if (!match) return 'FORMAT';
+
+  const [, queueNumStr, categoryStr] = match;
+  const queueNumber = parseInt(queueNumStr, 10);
+  const category = parseInt(categoryStr, 10);
+
+  return startQueueBrowse(queueNumber, category);
+}
+
+/* ---------------- QN و QI ----------------
+   لو وصلنا للدالتين دول أصلًا، فده معناه إننا مش جوه وضع تصفح طابور
+   (main.js بيوجّه لـ handleQueueModeInput في queues.js مباشرة وقت ما
+   الوضع نشط، قبل ما نوصل لـ parseCommand() خالص — راجع تعليق main.js).
+   يعني وصولنا هنا معناه أكيد إن مفيش تصفح نشط، فالرد ثابت دايمًا. */
+function handleQN(cmd) {
+  if (cmd !== 'QN') return 'FORMAT';
+  return 'NOT IN QUEUE MODE';
+}
+
+function handleQI(cmd) {
+  if (cmd !== 'QI') return 'FORMAT';
+  return 'NOT IN QUEUE MODE';
+}
+
+/* ---------------- QE (Queue Entry) ---------------- */
+const QE_REGEX = /^QE(\d{1,2})$/;
+
+function handleQE(cmd) {
+  const match = cmd.match(QE_REGEX);
+  if (!match) return 'FORMAT';
+
+  const [, queueNumStr] = match;
+  const queueNumber = parseInt(queueNumStr, 10);
+
+  // راجع الشرح الكامل أعلى الملف: لو فيه لقطة PNR اتعمله ER بنجاح،
+  // نستخدمها. لو لأ، نرجع لفحص الـ PNR الحالي بنفس شيكات ER الخمسة.
+  if (!lastCompletedPnr) {
+    const currentPnr = getCurrentPNR();
+    if (currentPnr.segments.length === 0) return 'NO ITINERARY SEGMENTS';
+    if (currentPnr.name === null) return 'PNR EMPTY - NEED NAME';
+    if (currentPnr.contact === null) return 'NEED CONTACT ELEMENT AP';
+    if (currentPnr.ticketingArrangement === null) return 'NEED TICKETING ARRANGEMENT TK';
+    if (currentPnr.receivedFrom === null) return 'NEED RECEIVED FROM RF';
+    return 'PNR NOT ENDED YET - USE ER FIRST';
+  }
+
+  addPnrToQueue(queueNumber, lastCompletedPnr);
+  return `QUEUED TO Q${queueNumber}`;
 }
