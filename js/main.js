@@ -3,52 +3,35 @@
   عرض الأوامر والردود على الشاشة. لا يحتوي على أي منطق تحليل أو
   تحقق — كل ده مسؤولية parser.js (قسم 7 من الـ Spec).
 
-  المرحلة 3: إضافة أمر داخلي LEVELTEST بيوجّه الإدخال لـ leveltest.js
-  بدل parser.js أثناء الاختبار، من غير ما يلمس parser.js أو pnr.js.
+  [... تعليقات المراحل 3/5/6/7 الأصلية كما هي بدون أي تغيير ...]
 
-  المرحلة 5: إضافة محرك تصحيح الأخطاء (errors.js) في نقطتين بس:
-  1) تحميل data/errors.json وتهيئة errors.js في loadData() (نفس نمط
-     initParser/initLevelTest الموجود بالفعل).
-  2) نقطة تكامل واحدة داخل handleSubmit() — بعد ما parseCommand()
-     يرجع رده، بنستدعي handleErrorFlow() بس لو الرد جاي من مسار
-     الأوامر العادية (isRegularCommand=true)، يعني أبدًا مش وقت
-     LEVELTEST نشط ولا وقت بدء LEVELTEST. مفيش أي تغيير في مسار
-     isTestActive()/startLevelTest() خالص.
+  === إضافة المرحلة 8 (إدارة الطوابير) ===
+  إضافتين بس، بنفس نمط LEVELTEST بالظبط (مش بنفس نمط errors.js):
 
-  === إضافة المرحلة 6 (الأسعار) ===
-  ⚠ فرق مهم عن سبك المرحلة 6 لازم Malik ياخد باله منه: قسم 5 من
-  السبك قال "main.js مفيش أي تعديل متوقع فيه" لأن الأوامر الجديدة
-  (FQD, FXP) بتمر من نفس مسار parseCommand() الموجود بالفعل — وده
-  صح جزئيًا بس. لسه في تعديل واحد ضروري لازم يحصل هنا، وإلا محرك
-  التسعير هيفضل من غير أي بيانات خالص:
+  1) تحميل data/queues.json في Promise.all ونداء initQueues() بيه —
+     نفس نمط initPricing/initAncillary تمامًا.
 
-  parser.js بيستورد getFareQuote/getFareForBookingClass من pricing.js،
-  وpricing.js مالوش أي بيانات إلا لما حد ينادي initPricing(data) —
-  بالظبط زي initParser/initLevelTest/initErrors. من غير إضافة تحميل
-  data/fares.json هنا ونداء initPricing() بيه، هتفضل faresData في
-  pricing.js فاضية للأبد، وأي أمر FQD أو FXP هيرجع "مفيش أسعار"
-  (NO FARES FOUND FOR CITY PAIR) دايمًا حتى لو المسار موجود فعلًا
-  في fares.json. ده مش تغيير في منطق التوجيه أو handleSubmit — بس
-  إضافة سطرين في Promise.all وسطر initPricing واحد، بنفس نمط باقي
-  الملفات اللي بتتحمّل بالفعل.
+  2) نقطة توجيه جديدة في handleSubmit(): وضع تصفح الطابور (بعد QS
+     ناجح) لازم "يقاطع" مسار الإدخال العادي بالكامل، بالظبط زي
+     LEVELTEST — أي حاجة المتدرب يكتبها وهو جوه الوضع ده المفروض
+     تروح لـ handleQueueModeInput() في queues.js، مش لـ parseCommand()
+     في parser.js. عشان كده الشرط الجديد (isQueueModeActive()) اتحط
+     في نفس سلسلة الـ if/else if الموجودة بالفعل لـ isTestActive()،
+     قبل المسار العادي مباشرة — إضافة شرط واحد بس، مفيش أي لمس للمسار
+     العادي أو لمسار LEVELTEST.
 
-  === إضافة المرحلة 7 (الخدمات الإضافية) ===
-  نفس النمط بالظبط اللي حصل مع initPricing في المرحلة اللي فاتت:
-  ancillary.js (بيانات الفنادق/السيارات/SSR/Timatic) مالوش أي بيانات
-  إلا لما initAncillary(data) تتنادى بيه. عشان كده اتضاف تحميل
-  الأربع ملفات الجديدة (hotels.json, cars.json, ssr.json, timatic.json)
-  في Promise.all، ونداء initAncillary() واحد بيهم مجمّعين. مفيش أي
-  تغيير في handleSubmit() خالص هنا (بعكس errors.js في المرحلة 5) —
-  أوامر المرحلة 7 كلها بتمر من نفس مسار parseCommand() → isRegularCommand
-  = true → handleErrorFlow() الموجود بالفعل، من غير أي نقطة تكامل
-  جديدة مطلوبة.
+     ملحوظة: أوامر الطوابير التانية (QT, QC, QS, QE) ماحتاجتش أي نقطة
+     تكامل جديدة هنا خالص — بتمر من نفس مسار parseCommand() العادي
+     زي أي أمر تاني (isRegularCommand = true)، فبتستفيد تلقائيًا من
+     محرك تصحيح الأخطاء (errors.js) الموجود بالفعل من المرحلة 5.
 */
 
 import { initParser, normalizeInput, parseCommand } from './parser.js';
 import { initLevelTest, isTestActive, startLevelTest, handleLevelTestInput } from './leveltest.js';
 import { initErrors, handleErrorFlow } from './errors.js';
 import { initPricing } from './pricing.js';
-import { initAncillary } from './ancillary.js'; // إضافة المرحلة 7
+import { initAncillary } from './ancillary.js';
+import { initQueues, isQueueModeActive, handleQueueModeInput } from './queues.js'; // إضافة المرحلة 8
 
 const outputEl = document.getElementById('output');
 const inputEl = document.getElementById('command-input');
@@ -82,7 +65,8 @@ async function loadData() {
   try {
     const [
       airports, airlines, rbd, flights, levelTestData, errorsData, faresData,
-      hotelsData, carsData, ssrData, timaticData // إضافة المرحلة 7
+      hotelsData, carsData, ssrData, timaticData,
+      queuesData // إضافة المرحلة 8
     ] = await Promise.all([
       fetchJSON('data/airports.json'),
       fetchJSON('data/airlines.json'),
@@ -91,17 +75,19 @@ async function loadData() {
       fetchJSON('data/level-test.json'),
       fetchJSON('data/errors.json'),
       fetchJSON('data/fares.json'),
-      fetchJSON('data/hotels.json'), // إضافة المرحلة 7
-      fetchJSON('data/cars.json'), // إضافة المرحلة 7
-      fetchJSON('data/ssr.json'), // إضافة المرحلة 7
-      fetchJSON('data/timatic.json') // إضافة المرحلة 7
+      fetchJSON('data/hotels.json'),
+      fetchJSON('data/cars.json'),
+      fetchJSON('data/ssr.json'),
+      fetchJSON('data/timatic.json'),
+      fetchJSON('data/queues.json') // إضافة المرحلة 8
     ]);
 
     initParser({ airports, airlines, rbd, flights });
     initLevelTest(levelTestData);
     initErrors(errorsData);
     initPricing(faresData);
-    initAncillary({ hotels: hotelsData, cars: carsData, ssr: ssrData, timatic: timaticData }); // إضافة المرحلة 7
+    initAncillary({ hotels: hotelsData, cars: carsData, ssr: ssrData, timatic: timaticData });
+    initQueues(queuesData); // إضافة المرحلة 8
 
     inputEl.disabled = false;
     inputEl.focus();
@@ -125,6 +111,9 @@ function handleSubmit() {
     response = handleLevelTestInput(normalized);
   } else if (normalized === 'LEVELTEST') {
     response = startLevelTest();
+  } else if (isQueueModeActive()) {
+    // === إضافة المرحلة 8 ===
+    response = handleQueueModeInput(normalized);
   } else {
     response = parseCommand(normalized);
     isRegularCommand = true;
