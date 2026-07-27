@@ -19,6 +19,26 @@
   فيه اسم متسجل بالفعل؟ هل فيه Segment محجوز؟) قبل ما يستدعي دوال
   الإضافة، ده ضروري لتطبيق قيود "المرحلة دي بس" (اسم واحد، Segment واحد)
   المذكورة في قسم 4.2 و4.3.
+
+  === إضافة المرحلة 7 (الخدمات الإضافية: فنادق/سيارات/SSR) ===
+  ⚠ ملحوظة مهمة: من المرحلة 2 لحد المرحلة 6، القاعدة كانت "متلمسش
+  pnr.js خالص" — كل المراحل اللي فاتت (leveltest, errors, pricing)
+  كانت بس بتضيف ملفات جديدة بتنادي الدوال المُصدَّرة من هنا من غير
+  ما تلمس الملف نفسه. المرحلة 7 مختلفة عمدًا (قرار موثّق في سبك
+  المرحلة نفسه، قسم 4 "الخيار أ"): الفنادق والسيارات وSSR في أماديوس
+  الحقيقي بتتحط جوه نفس الـ PNR بتاع الراكب (بتظهر في نفس شاشة
+  استرجاع الحجز النهائية)، مش في مكان منفصل — فالتعديل هنا حقيقي
+  ومقصود، مش مجرد إضافة ملف جديد بره.
+
+  الالتزام اللي اتحافظ عليه بدقة: كل الشيكات الإلزامية الموجودة
+  بالفعل في endAndRetrieve() (segments/name/contact/ticketing/
+  receivedFrom) فضلت زي ما هي حرفيًا من غير أي تغيير — مفيش سطر
+  واحد اتلغى أو اتعدّل من المنطق ده. الفنادق والسيارات وSSR عناصر
+  اختيارية بالكامل (مفيش أي شيك إلزامي جديد ليها)، فبيتم عرضها بس
+  (لو موجودة) بعد العناصر الخمسة الإلزامية، قبل خط الإغلاق مباشرة.
+  تم تشغيل اختبار انحدار كامل على الأوامر السبعة الأصلية + FQD/FXP
+  بعد التعديل ده للتأكد إن حاجة ماتبوظتش (تفاصيل الاختبار في تقرير
+  التسليم).
 */
 
 function emptyPNR() {
@@ -28,7 +48,11 @@ function emptyPNR() {
     contact: null,
     ticketingArrangement: null,
     receivedFrom: null,
-    recordLocator: null
+    recordLocator: null,
+    // === إضافة المرحلة 7 — عناصر اختيارية، مفيش أي شيك إلزامي عليها ===
+    hotels: [],
+    cars: [],
+    ssrs: []
   };
 }
 
@@ -97,6 +121,46 @@ export function addReceivedFrom(name) {
   return { success: true, message: `4. RF ${name}` };
 }
 
+// === إضافة المرحلة 7: فنادق/سيارات/SSR ===
+// الثلاثة دول بنفس نمط sellSegment/addName بالظبط: بترجع
+// { success, message }، وبتخزن العنصر في مصفوفة مخصصة جوه الـ PNR.
+// parser.js هو المسؤول عن بناء كائن hotel/car الجاهز بكل الحقول
+// المطلوبة (زي ما هو مسؤول فعلاً عن قراءة flights.json والتحقق من
+// رقم السطر في sellSegment) — نفس فصل المسؤوليات المذكور فوق تمامًا.
+
+export function addHotelSegment(hotel) {
+  pnr.hotels.push(hotel);
+
+  const message =
+    `HTL ${hotel.chainCode} ${hotel.hotelName}  ${hotel.roomType}  ` +
+    `${hotel.checkInDate}-${hotel.checkOutDate}  HK1  ` +
+    `TTL ${hotel.total} ${hotel.currency}`;
+
+  return { success: true, message };
+}
+
+export function addCarSegment(car) {
+  pnr.cars.push(car);
+
+  const message =
+    `CAR ${car.companyCode} ${car.companyName}  ${car.carType}  ` +
+    `${car.pickupDate}-${car.dropoffDate}  HK1  ` +
+    `TTL ${car.total} ${car.currency}`;
+
+  return { success: true, message };
+}
+
+// بتاخد الكود بس (زي ما هو منصوص في سبك المرحلة 7 قسم 4) — مفيش
+// حاجة تانية مطلوبة هنا لأن الـ PNR بيدعم راكب واحد بس (قيد المرحلة
+// 2)، فمفيش داعي لباراميتر ربط بالراكب زي /P1 الحقيقي. الوصف
+// بالعربي (لعرضه فورًا كرد على الأمر) بيتجاب من data/ssr.json في
+// parser.js نفسه وقت التحقق من الكود، مش هنا — نفس أسلوب باقي
+// الدوال هنا (بترجع رسالة بسيطة من غير ما تحتاج توصل لبيانات مرجعية).
+export function addSSR(code) {
+  pnr.ssrs.push({ code, status: 'HK' });
+  return { success: true, message: `SSR ${code} HK1` };
+}
+
 function generateRecordLocator() {
   const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   let code = '';
@@ -107,6 +171,7 @@ function generateRecordLocator() {
 }
 
 export function endAndRetrieve() {
+  // === بداية المنطق الإلزامي الأصلي (المرحلة 2) — زي ما هو بالظبط، غير متلموس ===
   if (pnr.segments.length === 0) {
     return { success: false, message: 'NO ITINERARY SEGMENTS' };
   }
@@ -134,6 +199,26 @@ export function endAndRetrieve() {
   const apLine = `3. AP ${pnr.contact.cityCode} ${pnr.contact.phone}`;
   const tkLine = `4. TK OK`;
   const rfLine = `5. RF ${pnr.receivedFrom}`;
+  // === نهاية المنطق الإلزامي الأصلي ===
+
+  // === إضافة المرحلة 7: عرض العناصر الاختيارية (فنادق/سيارات/SSR) ===
+  // دي مش عناصر إلزامية — مفيش أي شيك جديد اتضاف فوق في المنطق
+  // الإلزامي، بس لو العناصر دي موجودة فعلًا بيتم عرضها هنا كسطور
+  // إضافية بعد الخمسة سطور الإلزامية، مرقّمة بالتتابع زي عناصر PNR
+  // حقيقية (الفنادق والسيارات Segments زي رحلة الطيران فبترقيمها
+  // بيكمل من 6، أما SSR فبيظهر من غير رقم تسلسلي زي أغلب عروض SSR
+  // الحقيقية في PNR فعلي).
+  const hotelLines = pnr.hotels.map(
+    (h, idx) =>
+      `${6 + idx}. HTL ${h.chainCode} ${h.hotelName}  ${h.roomType}  ` +
+      `${h.checkInDate}-${h.checkOutDate}  HK1  TTL ${h.total} ${h.currency}`
+  );
+  const carLines = pnr.cars.map(
+    (c, idx) =>
+      `${6 + hotelLines.length + idx}. CAR ${c.companyCode} ${c.companyName}  ${c.carType}  ` +
+      `${c.pickupDate}-${c.dropoffDate}  HK1  TTL ${c.total} ${c.currency}`
+  );
+  const ssrLines = pnr.ssrs.map((s) => `SSR ${s.code} HK1`);
 
   const message = [
     '----------- PNR CREATED -----------',
@@ -143,6 +228,9 @@ export function endAndRetrieve() {
     apLine,
     tkLine,
     rfLine,
+    ...hotelLines,
+    ...carLines,
+    ...ssrLines,
     '------------------------------------'
   ].join('\n');
 
