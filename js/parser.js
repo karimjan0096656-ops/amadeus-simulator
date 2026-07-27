@@ -28,6 +28,25 @@
   الأول قبل منطق الحرفين الأصلي. الفحص ده إضافة قبل الكود الأصلي —
   مفيش سطر واحد من منطق الحرفين الأصلي أو من أي دالة handleAN/handleSS/
   handleNM/handleAP/handleTK/handleRF/handleER اتلمس أو اتغيّر.
+
+  === إضافة المرحلة 7 (الخدمات الإضافية) ===
+  كل أوامر المرحلة دي (HA, HS, CA, CS, SR, TI) حرفين بالظبط زي
+  AN/SS/RF، فمفيش حاجة زي تعقيد FQD/FXP فوق — بس إضافة الستة أكواد
+  دول لنفس مصفوفة COMMAND_CODES الموجودة، وست حالات (case) جديدة في
+  نفس الـ switch، وست دوال handle جديدة في آخر الملف. مفيش أي لمس
+  لمنطق الحرفين الأصلي أو لأي دالة handle قديمة.
+
+  ⚠ ملحوظتين مهمّتين عن سبك المرحلة 7 (راجع تعليق ancillary.js
+  للتفاصيل الكاملة والمصادر):
+  1) سبك المرحلة افترض VC/VS للسيارات، لكن الكود الحقيقي (اتأكد من
+     مصدرين مستقلين: بحثي في Amadeus Service Hub + بحث Malik بنفسه)
+     هو CA (توفر) وCS (بيع) — مش VC/VS. الكود هنا وفي ancillary.js
+     بيستخدم CA/CS. "/VC-" الحقيقي اللي Malik لقاه معناه حاجة تانية
+     خالص (الناقل المعتمد للإصدار) ومالوش علاقة بالسيارات — تفاصيل
+     كاملة في تعليق ancillary.js.
+  2) ترتيب حقول HA/CA اتصحح لـ "مدينة ثم تاريخ" (HACAI15JUL) بدل
+     ترتيب السبك الأصلي "تاريخ ثم مدينة"، عشان يطابق كل الأمثلة
+     الحقيقية اللي لقيتها من Amadeus (تفاصيل كاملة في ancillary.js).
 */
 
 import {
@@ -37,12 +56,27 @@ import {
   addTicketingArrangement,
   addReceivedFrom,
   endAndRetrieve,
-  getCurrentPNR
+  getCurrentPNR,
+  addHotelSegment,
+  addCarSegment,
+  addSSR
 } from './pnr.js';
 
 import { getFareQuote, getFareForBookingClass } from './pricing.js';
 
-const COMMAND_CODES = ['AN', 'SS', 'NM', 'AP', 'TK', 'RF', 'ER'];
+import {
+  findHotelsByCity,
+  findCarsByCity,
+  getSSRInfo,
+  getTimaticInfo,
+  addNightsToDate
+} from './ancillary.js';
+
+const COMMAND_CODES = [
+  'AN', 'SS', 'NM', 'AP', 'TK', 'RF', 'ER',
+  // === إضافة المرحلة 7 ===
+  'HA', 'HS', 'CA', 'CS', 'SR', 'TI'
+];
 
 // أوامر المرحلة 6 (التسعير) — كودها 3 حروف، فحص منفصل عن الحرفين
 // (راجع الملحوظة فوق).
@@ -55,6 +89,12 @@ let rbdCodes = [];
 
 // آخر عرض توفر (AN) ناجح — session state في الذاكرة، مش localStorage (قسم 4.1)
 let lastAvailabilityDisplay = null; // { origin, destination, date, flights: [...] } أو null
+
+// === إضافة المرحلة 7: نفس فلسفة lastAvailabilityDisplay، بس متغيرات
+// منفصلة تمامًا عشان عرض الفنادق/السيارات ما يبوّظش عرض الرحلات لو
+// المتدرب عمل AN وبعدين HA أو CA في نفس الجلسة (أو العكس) ===
+let lastHotelAvailabilityDisplay = null; // { cityCode, checkInDate, hotels: [...] } أو null
+let lastCarAvailabilityDisplay = null; // { cityCode, pickupDate, cars: [...] } أو null
 
 export function initParser(data) {
   airportsData = data.airports || [];
@@ -127,6 +167,19 @@ export function parseCommand(cmd) {
       return handleRF(cmd);
     case 'ER':
       return handleER(cmd);
+    // === إضافة المرحلة 7 ===
+    case 'HA':
+      return handleHA(cmd);
+    case 'HS':
+      return handleHS(cmd);
+    case 'CA':
+      return handleCA(cmd);
+    case 'CS':
+      return handleCS(cmd);
+    case 'SR':
+      return handleSR(cmd);
+    case 'TI':
+      return handleTI(cmd);
     default:
       return 'UNKNOWN COMMAND';
   }
@@ -342,4 +395,232 @@ function handleFXP(cmd) {
   lines.push(`BAGGAGE ALLOWANCE  ${fareInfo.baggageAllowance}`);
 
   return lines.join('\n');
-    }
+}
+
+/* ================== المرحلة 7 — الخدمات الإضافية ================== */
+
+/* ---------------- HA (Hotel Availability) ----------------
+   الصياغة المصحّحة: HA + كود مدينة (3 حروف) + تاريخ (يوم حرفين +
+   شهر 3 حروف)، لصيق من غير مسافات — زي HACAI15JUL. (السبك الأصلي
+   كان مفترض ترتيب عكسي "تاريخ ثم مدينة"؛ راجع تعليق ancillary.js
+   للتفصيل الكامل لسبب التصحيح.) */
+const HA_REGEX = /^HA([A-Z]{3})(\d{2})(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$/;
+
+function handleHA(cmd) {
+  const match = cmd.match(HA_REGEX);
+  if (!match) return 'FORMAT';
+
+  const [, cityCode, dayStr, month] = match;
+  const day = parseInt(dayStr, 10);
+  if (day < 1 || day > 31) return 'FORMAT';
+
+  // نفس منطق التحقق من كود المطار الموجود في handleAN بالظبط (من غير
+  // ما نلمس handleAN نفسها) — نفس أسلوب FQD/FXP في المرحلة اللي فاتت.
+  if (!airportsData.some((a) => a.iataCode === cityCode)) {
+    return `UNKNOWN CITY/AIRPORT ${cityCode}`;
+  }
+
+  const checkInDate = dayStr + month;
+  const hotels = findHotelsByCity(cityCode);
+
+  if (hotels.length === 0) return 'NO HOTELS FOUND FOR CITY';
+
+  lastHotelAvailabilityDisplay = { cityCode, checkInDate, hotels };
+
+  const lines = [];
+  lines.push(`** HOTEL AVAILABILITY - HA **  ${cityCode}  ${checkInDate}`);
+  lines.push('');
+
+  hotels.forEach((h, idx) => {
+    const lineNum = String(idx + 1).padStart(2, ' ');
+    const stars = '*'.repeat(h.category);
+    lines.push(
+      `${lineNum}  ${h.chainCode}  ${h.hotelName.padEnd(38, ' ')}  ${stars.padEnd(5, ' ')}  ` +
+        `${h.roomType}  ${String(h.nightlyRate).padStart(5, ' ')} ${h.currency}/NGT`
+    );
+  });
+
+  return lines.join('\n');
+}
+
+/* ---------------- HS (Hotel Sell) ----------------
+   الصياغة زي ما هي في السبك بالظبط: HS + رقم السطر + N (Nights) +
+   عدد الليالي، لصيق من غير مسافات — زي HS1N3. */
+const HS_REGEX = /^HS(\d{1,2})N(\d{1,2})$/;
+
+function handleHS(cmd) {
+  const match = cmd.match(HS_REGEX);
+  if (!match) return 'FORMAT';
+
+  const [, lineNumStr, nightsStr] = match;
+
+  if (!lastHotelAvailabilityDisplay) return 'NEED HOTEL AVAILABILITY DISPLAY FIRST';
+
+  const lineNum = parseInt(lineNumStr, 10);
+  const hotelsShown = lastHotelAvailabilityDisplay.hotels;
+  if (lineNum < 1 || lineNum > hotelsShown.length) return 'INVALID LINE NUMBER';
+
+  const nights = parseInt(nightsStr, 10);
+  // دفاع احتياطي بسيط زي ما هو منصوص في السبك (قسم 3.2): 1-30 ليلة منطقية.
+  if (nights < 1 || nights > 30) return 'FORMAT';
+
+  const hotel = hotelsShown[lineNum - 1];
+  const { checkInDate } = lastHotelAvailabilityDisplay;
+  const checkOutDate = addNightsToDate(checkInDate, nights);
+
+  const bookedHotel = {
+    hotelId: hotel.hotelId,
+    chainCode: hotel.chainCode,
+    hotelName: hotel.hotelName,
+    roomType: hotel.roomType,
+    nightlyRate: hotel.nightlyRate,
+    nights,
+    total: hotel.nightlyRate * nights,
+    currency: hotel.currency,
+    checkInDate,
+    checkOutDate
+  };
+
+  const result = addHotelSegment(bookedHotel);
+  return result.message;
+}
+
+/* ---------------- CA (Car Availability) ----------------
+   ⚠ تصحيح اسم الأمر عن السبك: السبك افترض VC، لكن الكود الحقيقي هو
+   CA (اتأكد من مصدرين مستقلين — راجع تعليق ancillary.js). نفس منطق
+   HA بالظبط (مدينة + تاريخ استلام، لصيق من غير مسافات) — زي
+   CADXB15JUL. */
+const CA_REGEX = /^CA([A-Z]{3})(\d{2})(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$/;
+
+function handleCA(cmd) {
+  const match = cmd.match(CA_REGEX);
+  if (!match) return 'FORMAT';
+
+  const [, cityCode, dayStr, month] = match;
+  const day = parseInt(dayStr, 10);
+  if (day < 1 || day > 31) return 'FORMAT';
+
+  if (!airportsData.some((a) => a.iataCode === cityCode)) {
+    return `UNKNOWN CITY/AIRPORT ${cityCode}`;
+  }
+
+  const pickupDate = dayStr + month;
+  const cars = findCarsByCity(cityCode);
+
+  if (cars.length === 0) return 'NO VEHICLES FOUND FOR CITY';
+
+  lastCarAvailabilityDisplay = { cityCode, pickupDate, cars };
+
+  const lines = [];
+  lines.push(`** CAR AVAILABILITY - CA **  ${cityCode}  ${pickupDate}`);
+  lines.push('');
+
+  cars.forEach((c, idx) => {
+    const lineNum = String(idx + 1).padStart(2, ' ');
+    lines.push(
+      `${lineNum}  ${c.companyCode}  ${c.companyName.padEnd(12, ' ')}  ${c.carType}  ` +
+        `${String(c.dailyRate).padStart(5, ' ')} ${c.currency}/DAY`
+    );
+  });
+
+  return lines.join('\n');
+}
+
+/* ---------------- CS (Car Sell) ----------------
+   ⚠ تصحيح اسم الأمر عن السبك: السبك افترض VS، لكن الكود الحقيقي هو
+   CS (نفس المصدرين المذكورين فوق). نفس منطق HS بالظبط بس بالأيام
+   بدل الليالي — CS + رقم السطر + D (Days) + عدد الأيام، زي CS1D3. */
+const CS_REGEX = /^CS(\d{1,2})D(\d{1,2})$/;
+
+function handleCS(cmd) {
+  const match = cmd.match(CS_REGEX);
+  if (!match) return 'FORMAT';
+
+  const [, lineNumStr, daysStr] = match;
+
+  if (!lastCarAvailabilityDisplay) return 'NEED CAR AVAILABILITY DISPLAY FIRST';
+
+  const lineNum = parseInt(lineNumStr, 10);
+  const carsShown = lastCarAvailabilityDisplay.cars;
+  if (lineNum < 1 || lineNum > carsShown.length) return 'INVALID LINE NUMBER';
+
+  const days = parseInt(daysStr, 10);
+  if (days < 1 || days > 30) return 'FORMAT';
+
+  const car = carsShown[lineNum - 1];
+  const { pickupDate } = lastCarAvailabilityDisplay;
+  const dropoffDate = addNightsToDate(pickupDate, days);
+
+  const bookedCar = {
+    carId: car.carId,
+    companyCode: car.companyCode,
+    companyName: car.companyName,
+    carType: car.carType,
+    dailyRate: car.dailyRate,
+    days,
+    total: car.dailyRate * days,
+    currency: car.currency,
+    pickupDate,
+    dropoffDate
+  };
+
+  const result = addCarSegment(bookedCar);
+  return result.message;
+}
+
+/* ---------------- SR (Special Service Request) ---------------- */
+const SR_REGEX = /^SR([A-Z]{4})$/;
+
+function handleSR(cmd) {
+  const match = cmd.match(SR_REGEX);
+  if (!match) return 'FORMAT';
+
+  const [, code] = match;
+
+  const ssrInfo = getSSRInfo(code);
+  if (!ssrInfo) return 'INVALID SSR CODE';
+
+  // لازم يكون فيه راكب مسجل بالفعل قبل ما تضيف SSR (قسم 3.5 من
+  // السبك). السبك قال "استخدم نفس رسالة NAME FIELD MANDATORY
+  // الموجودة أصلًا" — لكن الرسالة اللي بيرجعها pnr.js فعليًا لنفس
+  // الحالة هي 'PNR EMPTY - NEED NAME' مش 'NAME FIELD MANDATORY'
+  // (اللي أصلًا مجرد categoryCode/matchKey في errors.json، مش نص
+  // بيترجع من أي كود حقيقي). استخدمنا هنا 'PNR EMPTY - NEED NAME'
+  // (الموجودة فعليًا) عشان يبقى فيه رسالة واحدة بس لكل نفس الحالة في
+  // كل المشروع، وبرضه بتتصنّف صح من غير أي تعديل في errors.json لأن
+  // الاتنين أصلًا matchKeys لنفس التصنيف.
+  if (getCurrentPNR().name === null) {
+    return 'PNR EMPTY - NEED NAME';
+  }
+
+  const result = addSSR(code);
+  return result.message;
+}
+
+/* ---------------- TI (Timatic Query — مبسّط) ----------------
+   استعلام معلومات بس، زي FQD تمامًا — مش مرتبط بالـ PNR خالص، مفيش
+   حاجة بتتخزن. الافتراض الثابت (قسم 6.4 من السبك): جواز سفر مصري. */
+const TI_REGEX = /^TI([A-Z]{3})$/;
+
+function handleTI(cmd) {
+  const match = cmd.match(TI_REGEX);
+  if (!match) return 'FORMAT';
+
+  const [, destination] = match;
+
+  if (!airportsData.some((a) => a.iataCode === destination)) {
+    return `UNKNOWN CITY/AIRPORT ${destination}`;
+  }
+
+  const info = getTimaticInfo(destination);
+  if (!info) return 'NO TIMATIC DATA FOR DESTINATION';
+
+  const lines = [];
+  lines.push(`** TIMATIC - TI **  ${destination}  (جواز سفر مصري)`);
+  lines.push('');
+  lines.push(`VISA:   ${info.visaAr}`);
+  lines.push(`STAY:   ${info.maxStayAr}`);
+  lines.push(`HEALTH: ${info.healthNoteAr}`);
+
+  return lines.join('\n');
+}
