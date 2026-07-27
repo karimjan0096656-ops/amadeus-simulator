@@ -30,15 +30,25 @@
   (NO FARES FOUND FOR CITY PAIR) دايمًا حتى لو المسار موجود فعلًا
   في fares.json. ده مش تغيير في منطق التوجيه أو handleSubmit — بس
   إضافة سطرين في Promise.all وسطر initPricing واحد، بنفس نمط باقي
-  الملفات اللي بتتحمّل بالفعل. لو حابب تتأكد بنفسك: امسح السطرين
-  دول مؤقتًا وجرب FQDCAIDXB في المتصفح، هيرجع "مفيش أسعار" حتى لو
-  fares.json موجود ومليان بيانات صحيحة.
+  الملفات اللي بتتحمّل بالفعل.
+
+  === إضافة المرحلة 7 (الخدمات الإضافية) ===
+  نفس النمط بالظبط اللي حصل مع initPricing في المرحلة اللي فاتت:
+  ancillary.js (بيانات الفنادق/السيارات/SSR/Timatic) مالوش أي بيانات
+  إلا لما initAncillary(data) تتنادى بيه. عشان كده اتضاف تحميل
+  الأربع ملفات الجديدة (hotels.json, cars.json, ssr.json, timatic.json)
+  في Promise.all، ونداء initAncillary() واحد بيهم مجمّعين. مفيش أي
+  تغيير في handleSubmit() خالص هنا (بعكس errors.js في المرحلة 5) —
+  أوامر المرحلة 7 كلها بتمر من نفس مسار parseCommand() → isRegularCommand
+  = true → handleErrorFlow() الموجود بالفعل، من غير أي نقطة تكامل
+  جديدة مطلوبة.
 */
 
 import { initParser, normalizeInput, parseCommand } from './parser.js';
 import { initLevelTest, isTestActive, startLevelTest, handleLevelTestInput } from './leveltest.js';
 import { initErrors, handleErrorFlow } from './errors.js';
-import { initPricing } from './pricing.js'; // إضافة المرحلة 6
+import { initPricing } from './pricing.js';
+import { initAncillary } from './ancillary.js'; // إضافة المرحلة 7
 
 const outputEl = document.getElementById('output');
 const inputEl = document.getElementById('command-input');
@@ -70,20 +80,28 @@ async function fetchJSON(path) {
 
 async function loadData() {
   try {
-    const [airports, airlines, rbd, flights, levelTestData, errorsData, faresData] = await Promise.all([
+    const [
+      airports, airlines, rbd, flights, levelTestData, errorsData, faresData,
+      hotelsData, carsData, ssrData, timaticData // إضافة المرحلة 7
+    ] = await Promise.all([
       fetchJSON('data/airports.json'),
       fetchJSON('data/airlines.json'),
       fetchJSON('data/rbd.json'),
       fetchJSON('data/flights.json'),
       fetchJSON('data/level-test.json'),
       fetchJSON('data/errors.json'),
-      fetchJSON('data/fares.json') // إضافة المرحلة 6
+      fetchJSON('data/fares.json'),
+      fetchJSON('data/hotels.json'), // إضافة المرحلة 7
+      fetchJSON('data/cars.json'), // إضافة المرحلة 7
+      fetchJSON('data/ssr.json'), // إضافة المرحلة 7
+      fetchJSON('data/timatic.json') // إضافة المرحلة 7
     ]);
 
     initParser({ airports, airlines, rbd, flights });
     initLevelTest(levelTestData);
     initErrors(errorsData);
-    initPricing(faresData); // إضافة المرحلة 6
+    initPricing(faresData);
+    initAncillary({ hotels: hotelsData, cars: carsData, ssr: ssrData, timatic: timaticData }); // إضافة المرحلة 7
 
     inputEl.disabled = false;
     inputEl.focus();
