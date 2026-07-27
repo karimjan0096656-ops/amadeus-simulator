@@ -32,7 +32,7 @@ import { initErrors, handleErrorFlow } from './errors.js';
 import { initPricing } from './pricing.js';
 import { initAncillary } from './ancillary.js';
 import { initQueues, isQueueModeActive, handleQueueModeInput } from './queues.js'; // إضافة المرحلة 8
-
+import { initCoaching, isCoachingKeyword, handleCoachingKeyword, onCommandProcessed } from './coaching.js'; // إضافة المرحلة 9
 const outputEl = document.getElementById('output');
 const inputEl = document.getElementById('command-input');
 
@@ -66,7 +66,8 @@ async function loadData() {
     const [
       airports, airlines, rbd, flights, levelTestData, errorsData, faresData,
       hotelsData, carsData, ssrData, timaticData,
-      queuesData // إضافة المرحلة 8
+      queuesData, // إضافة المرحلة 8
+      scenariosData // إضافة المرحلة 9
     ] = await Promise.all([
       fetchJSON('data/airports.json'),
       fetchJSON('data/airlines.json'),
@@ -79,7 +80,8 @@ async function loadData() {
       fetchJSON('data/cars.json'),
       fetchJSON('data/ssr.json'),
       fetchJSON('data/timatic.json'),
-      fetchJSON('data/queues.json') // إضافة المرحلة 8
+      fetchJSON('data/queues.json'), // إضافة المرحلة 8
+      fetchJSON('data/scenarios.json') // إضافة المرحلة 9
     ]);
 
     initParser({ airports, airlines, rbd, flights });
@@ -87,7 +89,7 @@ async function loadData() {
     initErrors(errorsData);
     initPricing(faresData);
     initAncillary({ hotels: hotelsData, cars: carsData, ssr: ssrData, timatic: timaticData });
-    initQueues(queuesData); // إضافة المرحلة 8
+    initCoaching(scenariosData); // إضافة المرحلة 9
 
     inputEl.disabled = false;
     inputEl.focus();
@@ -112,8 +114,12 @@ function handleSubmit() {
   } else if (normalized === 'LEVELTEST') {
     response = startLevelTest();
   } else if (isQueueModeActive()) {
+  } else if (isQueueModeActive()) {
     // === إضافة المرحلة 8 ===
     response = handleQueueModeInput(normalized);
+  } else if (isCoachingKeyword(normalized)) {
+    // === إضافة المرحلة 9 ===
+    response = handleCoachingKeyword(normalized);
   } else {
     response = parseCommand(normalized);
     isRegularCommand = true;
@@ -125,6 +131,12 @@ function handleSubmit() {
     const errorFlow = handleErrorFlow(response, normalized);
     if (errorFlow) {
       errorFlow.forEach((line) => appendLine(line, 'error-flow-line'));
+    }
+
+    // === إضافة المرحلة 9 ===
+    const coachingHint = onCommandProcessed(normalized, response);
+    if (coachingHint) {
+      coachingHint.forEach((line) => appendLine(line, 'coaching-line'));
     }
   }
 
