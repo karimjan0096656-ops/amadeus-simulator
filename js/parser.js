@@ -1,69 +1,15 @@
 /*
-  parser.js — محلل أوامر الطرفية (المرحلة 2: AN, SS, NM, AP, TK, RF, ER)
+  parser.js — محلل أوامر الطرفية
 
-  تصحيح مهم عن الـ Spec (لازم ينتبه له Malik):
-  قسم 5 من الـ Spec بيقول إن قايمة الأوامر المعروفة هي
-  (AN, SS, NM, AP, TK, ER) — 6 أوامر بس، وناسي RF! لكن قسم 4 نفسه
-  عنوانه "الأوامر السبعة" ومفصّل RF كأمر كامل (4.6)، ومعيار القبول
-  (قسم 11) بيختبر RF MALIK صراحة. لو اتبعنا قسم 5 حرفيًا، RF كانت
-  هترجع UNKNOWN COMMAND دايمًا وكل سيناريو ER كان هيفشل. اعتبرها
-  سبق قلم في الـ Spec، وتم تصحيحها هنا بإضافة RF لقائمة الأوامر
-  المعروفة (7 أوامر). لو حابب تسجلها في PROJECT.md أو الـ Spec
-  نفسه كتصحيح رسمي، قولّي.
-
-  === إضافة المرحلة 6 (الأسعار) ===
-  ⚠ فرق مهم لازم Malik ياخد باله منه، بنفس روح ملحوظة RF فوق:
-  سبك المرحلة 6 (قسم 5) بيقول "ضيف FQD و FXP في مصفوفة COMMAND_CODES"
-  وكأنهم هيتحطوا جنب AN/SS/... في نفس المصفوفة الموجودة. ده مينفعش
-  حرفيًا: parseCommand الفعلي بياخد code = cmd.slice(0, 2) — أول
-  حرفين بس من الأمر. يعني "FQDCAIDXB".slice(0,2) === "FQ" مش "FQD"،
-  ونفس الحاجة لـ "FXP".slice(0,2) === "FX". لو ضفت 'FQD'/'FXP' كسترنج
-  في نفس مصفوفة الحرفين COMMAND_CODES، الشرط COMMAND_CODES.includes(code)
-  هيفضل false دايمًا لأي أمر تسعير (لأن "FQ" != "FQD")، وهيرجع
-  UNKNOWN COMMAND كل مرة — يعني الأمر هيبقى ميت فعليًا حتى لو الكود
-  "شكله" مضاف صح.
-
-  عشان كده عملت مصفوفة منفصلة للأوامر التلات حروف
-  (THREE_LETTER_COMMAND_CODES) وفحص منفصل بياخد أول 3 حروف، بيتفحص
-  الأول قبل منطق الحرفين الأصلي. الفحص ده إضافة قبل الكود الأصلي —
-  مفيش سطر واحد من منطق الحرفين الأصلي أو من أي دالة handleAN/handleSS/
-  handleNM/handleAP/handleTK/handleRF/handleER اتلمس أو اتغيّر.
-
-  === إضافة المرحلة 7 (الخدمات الإضافية) ===
-  كل أوامر المرحلة دي (HA, HS, CA, CS, SR, TI) حرفين بالظبط زي
-  AN/SS/RF، فمفيش حاجة زي تعقيد FQD/FXP فوق — بس إضافة الستة أكواد
-  دول لنفس مصفوفة COMMAND_CODES الموجودة، وست حالات (case) جديدة في
-  نفس الـ switch، وست دوال handle جديدة في آخر الملف. مفيش أي لمس
-  لمنطق الحرفين الأصلي أو لأي دالة handle قديمة.
-
-  ⚠ ملحوظتين مهمّتين عن سبك المرحلة 7 (راجع تعليق ancillary.js
-  للتفاصيل الكاملة والمصادر):
-  1) سبك المرحلة افترض VC/VS للسيارات، لكن الكود الحقيقي (اتأكد من
-     مصدرين مستقلين: بحثي في Amadeus Service Hub + بحث Malik بنفسه)
-     هو CA (توفر) وCS (بيع) — مش VC/VS. الكود هنا وفي ancillary.js
-     بيستخدم CA/CS. "/VC-" الحقيقي اللي Malik لقاه معناه حاجة تانية
-     خالص (الناقل المعتمد للإصدار) ومالوش علاقة بالسيارات — تفاصيل
-     كاملة في تعليق ancillary.js.
-  2) ترتيب حقول HA/CA اتصحح لـ "مدينة ثم تاريخ" (HACAI15JUL) بدل
-     ترتيب السبك الأصلي "تاريخ ثم مدينة"، عشان يطابق كل الأمثلة
-     الحقيقية اللي لقيتها من Amadeus (تفاصيل كاملة في ancillary.js).
-
-  === إضافة المرحلة 8 (إدارة الطوابير) ===
-  أوامر المرحلة دي (QT, QC, QS, QN, QI, QE) كلها حرفين بالظبط، فمفيش
-  تعقيد زي FQD/FXP — بس إضافة الستة أكواد لنفس مصفوفة COMMAND_CODES
-  الموجودة، وست حالات (case) جديدة في نفس الـ switch، وست دوال handle
-  جديدة في آخر الملف (نفس نمط المرحلة 7 بالظبط).
-
-  ⚠ استثناء واحد بس لقاعدة "مفيش لمس لأي دالة handle موجودة" (موثّق
-  بالتفصيل الكامل في تعليق queues.js): handleER() اتضاف لها التقاط
-  لقطة بسيطة (اسم الراكب + Record Locator) قبل نداء endAndRetrieve()
-  مباشرة، لأن الدالة دي بتصفّر الـ PNR تلقائيًا (resetPNR()) في آخرها
-  بعد كل نجاح — من غير اللقطة دي، أمر QE (قسم 4.7 من سبك المرحلة 8)
-  مش هيلاقي أي بيانات يحطها على الطابور فورًا بعد ER. اللقطة بتتاخد
-  قبل النداء، وبتتخزن بعد النجاح بس؛ رسالة endAndRetrieve() ومنطقها
-  الداخلي (الشيكات الخمسة، ترتيب السطور، إلخ) فضلوا زي ما هم بالظبط
-  من غير أي تغيير — القيمة المُرجعة لـ handleER() نفسها متطابقة حرفيًا
-  زي الأصل.
+  === إضافة المرحلة 11 (سد فجوات ❌ من certification-alignment-report.md) ===
+  أربع أوامر جداد، الأربعة حروف اتنين (زي AN/SS...)، فمفيش تعقيد زي
+  FQD/FXP — إضافة لنفس مصفوفة COMMAND_CODES، وحالات (case) جديدة في
+  نفس الـ switch، ودوال handle جديدة في آخر الملف:
+    RT<كود 6 حروف>  -> استرجاع PNR منتهي بكوده (فجوة عالية الأولوية)
+    XE<رقم عنصر>    -> إلغاء عنصر من الحجز المفتوح (فجوة عالية الأولوية)
+    IG               -> تجاهل الحجز المفتوح من غير حفظ (فجوة عالية الأولوية)
+    ET               -> إنهاء الحجز من غير عرض شاشة استرجاع كاملة (فجوة منخفضة)
+  مفيش أي لمس لأي دالة handle قديمة ولا لمنطق الحرفين الأصلي.
 */
 
 import {
@@ -76,10 +22,25 @@ import {
   getCurrentPNR,
   addHotelSegment,
   addCarSegment,
-  addSSR
+  addSSR,
+  // === إضافة المرحلة 11 (دفعة 1) ===
+  endTransact,
+  ignorePnr,
+  retrievePnr,
+  cancelElement,
+  // === إضافة المرحلة 11 (دفعة 2) ===
+  addTicketingTimeLimit,
+  addMobileContact,
+  addEmailContact,
+  addRemark,
+  addOsi,
+  // === إضافة المرحلة 11 (دفعة 3) ===
+  issueTicket,
+  // === إضافة المرحلة 11 (دفعة 6) ===
+  setSelectedSeat
 } from './pnr.js';
 
-import { getFareQuote, getFareForBookingClass } from './pricing.js';
+import { getFareQuote, getFareForBookingClass, getFareRules } from './pricing.js';
 
 import {
   findHotelsByCity,
@@ -89,23 +50,35 @@ import {
   addNightsToDate
 } from './ancillary.js';
 
-// === إضافة المرحلة 8 ===
 import {
   getQueueTableDisplay,
   getQueueCountDisplay,
   startQueueBrowse,
-  addPnrToQueue
+  addPnrToQueue,
+  // === إضافة المرحلة 11 (دفعة 3) ===
+  deletePnrFromQueue
 } from './queues.js';
+
+// === إضافة المرحلة 11 (دفعة 6) ===
+import { getSeatMapDisplay, selectSeat } from './seatmaps.js';
 
 const COMMAND_CODES = [
   'AN', 'SS', 'NM', 'AP', 'TK', 'RF', 'ER',
-  // === إضافة المرحلة 7 ===
   'HA', 'HS', 'CA', 'CS', 'SR', 'TI',
-  // === إضافة المرحلة 8 ===
-  'QT', 'QC', 'QS', 'QN', 'QI', 'QE'
+  'QT', 'QC', 'QS', 'QN', 'QI', 'QE',
+  // === إضافة المرحلة 11 (دفعة 1) ===
+  'RT', 'XE', 'IG', 'ET',
+  // === إضافة المرحلة 11 (دفعة 2) — ملحوظة: APM/APE مش هنا لأنهم
+  // بيشتركوا في نفس أول حرفين "AP" مع أمر AP الأصلي، فبيتوجهوا لنفس
+  // case 'AP' الموجودة بالفعل، وbبتفرّق بينهم جوه handleAP نفسها ===
+  'RM', 'OS', 'SN',
+  // === إضافة المرحلة 11 (دفعة 3) ===
+  'QD',
+  // === إضافة المرحلة 11 (دفعة 6) ===
+  'SM', 'ST'
 ];
 
-const THREE_LETTER_COMMAND_CODES = ['FQD', 'FXP'];
+const THREE_LETTER_COMMAND_CODES = ['FQD', 'FXP', 'TTP', 'FXB', 'DAC', 'DNA', 'FQN', 'FQR'];
 
 let airportsData = [];
 let airlinesData = [];
@@ -116,11 +89,6 @@ let lastAvailabilityDisplay = null;
 let lastHotelAvailabilityDisplay = null;
 let lastCarAvailabilityDisplay = null;
 
-// === إضافة المرحلة 8: لقطة آخر PNR اتعمله ER بنجاح في الجلسة دي،
-// عشان QE يقدر يستخدمها بعد ما pnr.js يكون صفّر الحالة الحقيقية.
-// راجع تعليق أعلى الملف وتعليق queues.js للتفاصيل الكاملة. بتفضل
-// موجودة (من غير مسح تلقائي) لحد ما ER تاني ينجح — يعني تقدر تحط نفس
-// الـ PNR على أكتر من طابور بأكتر من QE لو حبيت، زي أماديوس الحقيقي. ===
 let lastCompletedPnr = null;
 
 export function initParser(data) {
@@ -164,6 +132,21 @@ export function parseCommand(cmd) {
         return handleFQD(cmd);
       case 'FXP':
         return handleFXP(cmd);
+      // === إضافة المرحلة 11 (دفعة 3) ===
+      case 'TTP':
+        return handleTTP(cmd);
+      case 'FXB':
+        return handleFXB(cmd);
+      // === إضافة المرحلة 11 (دفعة 4) ===
+      case 'DAC':
+        return handleDAC(cmd);
+      case 'DNA':
+        return handleDNA(cmd);
+      // === إضافة المرحلة 11 (دفعة 5) — FQN وFQR بيتعاملوا كمرادفين
+      // (نفس الدالة) لحد ما نتأكد من فرق حقيقي دقيق بينهم لو موجود ===
+      case 'FQN':
+      case 'FQR':
+        return handleFQN(cmd);
       default:
         return 'UNKNOWN COMMAND';
     }
@@ -202,7 +185,6 @@ export function parseCommand(cmd) {
       return handleSR(cmd);
     case 'TI':
       return handleTI(cmd);
-    // === إضافة المرحلة 8 ===
     case 'QT':
       return handleQT(cmd);
     case 'QC':
@@ -215,6 +197,29 @@ export function parseCommand(cmd) {
       return handleQI(cmd);
     case 'QE':
       return handleQE(cmd);
+    // === إضافة المرحلة 11 ===
+    case 'RT':
+      return handleRT(cmd);
+    case 'XE':
+      return handleXE(cmd);
+    case 'IG':
+      return handleIG(cmd);
+    case 'ET':
+      return handleET(cmd);
+    // === إضافة المرحلة 11 (دفعة 2) ===
+    case 'RM':
+      return handleRM(cmd);
+    case 'OS':
+      return handleOS(cmd);
+    case 'SN':
+      return handleSN(cmd);
+    case 'QD':
+      return handleQD(cmd);
+    // === إضافة المرحلة 11 (دفعة 6) ===
+    case 'SM':
+      return handleSM(cmd);
+    case 'ST':
+      return handleST(cmd);
     default:
       return 'UNKNOWN COMMAND';
   }
@@ -255,7 +260,16 @@ function handleAN(cmd) {
 
   matches.forEach((f, idx) => {
     const lineNum = String(idx + 1).padStart(2, ' ');
-    const rbdBlock = rbdCodes.map((code) => `${code}${f.availability[code] ?? 0}`).join(' ');
+    // === إضافة المرحلة 11 (دفعة 7): -1 معناها "قائمة انتظار مفتوحة"
+    // في بيانات التوفر — بتتعرض كـ"L" (زي شاشات أماديوس الحقيقية)
+    // بدل ما تتعرض كرقم سالب خام. القيم التانية (0 أو أي رقم موجب)
+    // بتتعرض زي ما هي بالظبط، من غير أي تغيير. ===
+    const rbdBlock = rbdCodes
+      .map((code) => {
+        const value = f.availability[code] ?? 0;
+        return `${code}${value === -1 ? 'L' : value}`;
+      })
+      .join(' ');
     const line =
       `${lineNum}  ${f.airlineCode} ${f.flightNumber.padEnd(4, ' ')}  ${rbdBlock}  ` +
       `${f.origin} ${f.destination}  ${f.departureTime} ${f.arrivalTime}  ${f.aircraftType}`;
@@ -268,10 +282,38 @@ function handleAN(cmd) {
 /* ---------------- SS ---------------- */
 const SS_REGEX = /^SS(\d{1,2})([A-Z])(\d)$/;
 
+// === إضافة المرحلة 11 (دفعة 7 — سد فجوة ❌ Waitlist): صيغة البيع
+// المباشر (Direct Sell) من غير عرض توفر سابق (AN)، زي أي Direct Sell
+// حقيقي: شركة الطيران (حرفين) + رقم الرحلة + فئة + تاريخ + مسار +
+// NN + عدد المقاعد، كله لصيق. الصيغة دي أطول وأكتر تحديدًا من صيغة
+// SS_REGEX الأصلية (رقم سطر بس)، فمفيش أي تداخل ممكن — أي أمر كان
+// بيتطابق مع SS_REGEX القديمة لسه بيتطابق معاها بالظبط وبنفس النتيجة،
+// والصيغة الجديدة دي بتتفحص بس لو القديمة فشلت. ===
+const DIRECT_SS_REGEX =
+  /^SS([A-Z]{2})(\d{3,4})([A-Z])(\d{2})(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)([A-Z]{3})([A-Z]{3})NN(\d)$/;
+
 function handleSS(cmd) {
   const match = cmd.match(SS_REGEX);
-  if (!match) return 'FORMAT';
+  if (match) {
+    return handleSSFromDisplay(match);
+  }
 
+  const directMatch = cmd.match(DIRECT_SS_REGEX);
+  if (directMatch) {
+    return handleDirectSell(directMatch);
+  }
+
+  return 'FORMAT';
+}
+
+// === هي بالظبط نفس handleSS الأصلية القديمة، من غير أي تغيير في
+// منطقها الداخلي — بس اتفصلت في دالة منفصلة عشان handleSS الجديدة
+// تقدر تجرب صيغتين. الإضافة الوحيدة الحقيقية: لو التوفر = -1 (قائمة
+// انتظار مفتوحة — تمثيل بيانات جديد، القيم الموجبة القديمة زي 0
+// وأي رقم تاني فضلت بنفس المعنى الأصلي بالظبط)، البيع بيتم بحالة HL
+// بدل HK، من غير شرط "عدد المقاعد <= المتاح" (منطقيًا مفيش سقف على
+// قائمة الانتظار زي المقاعد المؤكدة). ===
+function handleSSFromDisplay(match) {
   const [, lineNumStr, bookingClass, seatsStr] = match;
 
   if (!lastAvailabilityDisplay) return 'NEED AVAILABILITY DISPLAY FIRST';
@@ -284,6 +326,17 @@ function handleSS(cmd) {
 
   const flight = flightsShown[lineNum - 1];
   const available = flight.availability[bookingClass] ?? 0;
+
+  // === إضافة المرحلة 11 (دفعة 7): الفرع الوحيد الجديد ===
+  if (available === -1) {
+    if (getCurrentPNR().segments.length > 0) {
+      return 'MULTIPLE SEGMENTS NOT SUPPORTED YET (PHASE 2 LIMIT)';
+    }
+    const waitlistSeats = parseInt(seatsStr, 10);
+    const result = sellSegment(lineNum, flight, bookingClass, waitlistSeats, 'HL');
+    return result.message;
+  }
+
   if (available === 0) return 'CLASS NOT AVAILABLE';
 
   const seats = parseInt(seatsStr, 10);
@@ -294,6 +347,53 @@ function handleSS(cmd) {
   }
 
   const result = sellSegment(lineNum, flight, bookingClass, seats);
+  return result.message;
+}
+
+// === إضافة المرحلة 11 (دفعة 7 — سد فجوة ❌ Direct Sell) ===
+function handleDirectSell(match) {
+  const [, airlineCode, flightNumber, bookingClass, dayStr, month, origin, destination, seatsStr] = match;
+
+  const day = parseInt(dayStr, 10);
+  if (day < 1 || day > 31) return 'FORMAT';
+  const date = dayStr + month;
+
+  if (!airportsData.some((a) => a.iataCode === origin)) {
+    return `UNKNOWN CITY/AIRPORT ${origin}`;
+  }
+  if (!airportsData.some((a) => a.iataCode === destination)) {
+    return `UNKNOWN CITY/AIRPORT ${destination}`;
+  }
+
+  const flight = flightsData.find(
+    (f) =>
+      f.airlineCode === airlineCode &&
+      f.flightNumber === flightNumber &&
+      f.origin === origin &&
+      f.destination === destination &&
+      f.departureDate === date
+  );
+  if (!flight) return 'NO FLIGHTS FOUND FOR CITY PAIR/DATE';
+
+  if (!rbdCodes.includes(bookingClass)) return 'INVALID CLASS';
+
+  const available = flight.availability[bookingClass] ?? 0;
+
+  if (getCurrentPNR().segments.length > 0) {
+    return 'MULTIPLE SEGMENTS NOT SUPPORTED YET (PHASE 2 LIMIT)';
+  }
+
+  const seats = parseInt(seatsStr, 10);
+
+  if (available === -1) {
+    const result = sellSegment(1, flight, bookingClass, seats, 'HL');
+    return result.message;
+  }
+
+  if (available === 0) return 'CLASS NOT AVAILABLE';
+  if (seats > available) return 'NOT ENOUGH SEATS AVAILABLE';
+
+  const result = sellSegment(1, flight, bookingClass, seats);
   return result.message;
 }
 
@@ -314,23 +414,62 @@ function handleNM(cmd) {
   return result.message;
 }
 
-/* ---------------- AP ---------------- */
+/* ---------------- AP (+ إضافة المرحلة 11 دفعة 2: APM/APE) ---------------- */
 const AP_REGEX = /^AP\s([A-Z]{3})\s(\d{6,15})$/;
+const APM_REGEX = /^APM\s(\d{6,15})$/;
+const APE_REGEX = /^APE\s([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})$/;
 
+// === إضافة المرحلة 11 (دفعة 2): AP وAPM وAPE التلاتة بيبدأوا بنفس
+// أول حرفين "AP"، فبيوصلوا لنفس case واحدة في الـswitch. الدالة هنا
+// بتجرب الصيغة الأصلية (AP) الأول من غير أي تغيير في ترتيبها أو
+// شرطها، وبعدين لو ملقتش، بتجرب APM وبعدين APE. مفيش أي تغيير في
+// سلوك AP الأصلي القديم. ===
 function handleAP(cmd) {
-  const match = cmd.match(AP_REGEX);
-  if (!match) return 'FORMAT';
+  const apMatch = cmd.match(AP_REGEX);
+  if (apMatch) {
+    const [, cityCode, phone] = apMatch;
+    const result = addContact(cityCode, phone);
+    return result.message;
+  }
 
-  const [, cityCode, phone] = match;
-  const result = addContact(cityCode, phone);
-  return result.message;
+  const apmMatch = cmd.match(APM_REGEX);
+  if (apmMatch) {
+    const [, phone] = apmMatch;
+    const result = addMobileContact(phone);
+    return result.message;
+  }
+
+  const apeMatch = cmd.match(APE_REGEX);
+  if (apeMatch) {
+    const [, email] = apeMatch;
+    const result = addEmailContact(email);
+    return result.message;
+  }
+
+  return 'FORMAT';
 }
 
-/* ---------------- TK ---------------- */
+/* ---------------- TK (+ إضافة المرحلة 11 دفعة 2: TKTL) ---------------- */
+const TKTL_REGEX = /^TKTL(\d{2})(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$/;
+
+// === إضافة المرحلة 11 (دفعة 2): TKOK فضل بالظبط زي ما هو (أول شرط،
+// من غير أي تغيير)، وTKTL اتضافت كصيغة بديلة بس. ===
 function handleTK(cmd) {
-  if (cmd !== 'TKOK') return 'FORMAT';
-  const result = addTicketingArrangement();
-  return result.message;
+  if (cmd === 'TKOK') {
+    const result = addTicketingArrangement();
+    return result.message;
+  }
+
+  const tlMatch = cmd.match(TKTL_REGEX);
+  if (tlMatch) {
+    const [, dayStr, month] = tlMatch;
+    const day = parseInt(dayStr, 10);
+    if (day < 1 || day > 31) return 'FORMAT';
+    const result = addTicketingTimeLimit(dayStr + month);
+    return result.message;
+  }
+
+  return 'FORMAT';
 }
 
 /* ---------------- RF ---------------- */
@@ -349,10 +488,6 @@ function handleRF(cmd) {
 function handleER(cmd) {
   if (cmd !== 'ER') return 'FORMAT';
 
-  // === إضافة المرحلة 8 — راجع الشرح الكامل أعلى الملف وفي queues.js ===
-  // لازم نلقط اسم الراكب قبل نداء endAndRetrieve() لأنها بتصفّر الـ
-  // PNR (resetPNR()) في آخرها تلقائيًا بعد أي نجاح. اللقطة دي مالهاش
-  // أي تأثير على منطق endAndRetrieve() ولا على القيمة المُرجعة هنا.
   const nameSnapshot = getCurrentPNR().name;
 
   const result = endAndRetrieve();
@@ -371,7 +506,138 @@ function handleER(cmd) {
   return result.message;
 }
 
-/* ---------------- FQD (المرحلة 6) ---------------- */
+/* ==================================================================
+   إضافة المرحلة 11 — سد فجوات ❌ (استرجاع/تجاهل/إلغاء عنصر/إنهاء بديل)
+   ================================================================== */
+
+/* ---------------- RT (فجوة عالية الأولوية) ---------------- */
+const RT_REGEX = /^RT([A-Z]{6})$/;
+
+function handleRT(cmd) {
+  const match = cmd.match(RT_REGEX);
+  if (!match) return 'FORMAT';
+
+  const [, recordLocator] = match;
+  const result = retrievePnr(recordLocator);
+  return result.message;
+}
+
+/* ---------------- XE (فجوة عالية الأولوية) ---------------- */
+const XE_REGEX = /^XE(\d{1,2})$/;
+
+function handleXE(cmd) {
+  const match = cmd.match(XE_REGEX);
+  if (!match) return 'FORMAT';
+
+  const [, lineNumStr] = match;
+  const lineNumber = parseInt(lineNumStr, 10);
+
+  const result = cancelElement(lineNumber);
+  return result.message;
+}
+
+/* ---------------- IG (فجوة عالية الأولوية) ---------------- */
+function handleIG(cmd) {
+  if (cmd !== 'IG') return 'FORMAT';
+  const result = ignorePnr();
+  return result.message;
+}
+
+/* ---------------- RM (دفعة 2 — فجوة متوسطة الأولوية) ---------------- */
+const RM_REGEX = /^RM (.+)$/;
+
+function handleRM(cmd) {
+  const match = cmd.match(RM_REGEX);
+  if (!match) return 'FORMAT';
+
+  const [, text] = match;
+  const result = addRemark(text);
+  return result.message;
+}
+
+/* ---------------- OS (دفعة 2 — فجوة متوسطة الأولوية) ---------------- */
+const OS_REGEX = /^OS (.+)$/;
+
+function handleOS(cmd) {
+  const match = cmd.match(OS_REGEX);
+  if (!match) return 'FORMAT';
+
+  const [, text] = match;
+  const result = addOsi(text);
+  return result.message;
+}
+
+/* ---------------- SN (دفعة 2 — فجوة متوسطة الأولوية، جدول رحلات) ----------------
+   بعكس AN، مفيش عرض توفر (RBD/أرقام مقاعد) — بس جدول أوقات الرحلات
+   الموجودة فعليًا على نفس المسار والتاريخ، زي أي Schedule Display
+   حقيقي. بيستخدم نفس flightsData الموجودة بالفعل من غير أي بيانات
+   إضافية جديدة. ملحوظة: SN هنا معتمد كأقرب مرجع صناعي عام لعرض
+   الجدول الزمني — لو الاسم الحقيقي الدقيق مختلف في مصدرك الرسمي،
+   سهل نعدّله (تغيير كود لصيق زي RF/RT بالظبط). ===
+*/
+const SN_REGEX = /^SN(\d{2})(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)([A-Z]{3})([A-Z]{3})$/;
+
+function handleSN(cmd) {
+  const match = cmd.match(SN_REGEX);
+  if (!match) return 'FORMAT';
+
+  const [, dayStr, month, origin, destination] = match;
+  const day = parseInt(dayStr, 10);
+  if (day < 1 || day > 31) return 'FORMAT';
+
+  const date = dayStr + month;
+
+  if (!airportsData.some((a) => a.iataCode === origin)) {
+    return `UNKNOWN CITY/AIRPORT ${origin}`;
+  }
+  if (!airportsData.some((a) => a.iataCode === destination)) {
+    return `UNKNOWN CITY/AIRPORT ${destination}`;
+  }
+  if (origin === destination) return 'INVALID CITY PAIR';
+
+  const matches = flightsData.filter(
+    (f) => f.origin === origin && f.destination === destination && f.departureDate === date
+  );
+
+  if (matches.length === 0) return 'NO FLIGHTS FOUND FOR CITY PAIR/DATE';
+
+  const lines = [];
+  lines.push(`** SCHEDULE - SN **  ${origin}-${destination}  ${date}`);
+  lines.push('');
+
+  matches.forEach((f, idx) => {
+    const lineNum = String(idx + 1).padStart(2, ' ');
+    lines.push(
+      `${lineNum}  ${f.airlineCode} ${f.flightNumber.padEnd(4, ' ')}  ` +
+        `${f.origin} ${f.destination}  ${f.departureTime} ${f.arrivalTime}  ${f.aircraftType}`
+    );
+  });
+
+  return lines.join('\n');
+}
+
+/* ---------------- ET (فجوة منخفضة الأولوية) ---------------- */
+function handleET(cmd) {
+  if (cmd !== 'ET') return 'FORMAT';
+
+  const nameSnapshot = getCurrentPNR().name;
+  const result = endTransact();
+
+  if (result.success) {
+    const locatorMatch = result.message.match(/RECORD LOCATOR:\s*([A-Z]{6})/);
+    if (locatorMatch && nameSnapshot) {
+      const titlePart = nameSnapshot.title ? ` ${nameSnapshot.title}` : '';
+      lastCompletedPnr = {
+        recordLocator: locatorMatch[1],
+        passengerName: `${nameSnapshot.lastName}/${nameSnapshot.firstName}${titlePart}`
+      };
+    }
+  }
+
+  return result.message;
+}
+
+/* ---------------- FQD ---------------- */
 const FQD_REGEX = /^FQD([A-Z]{3})([A-Z]{3})$/;
 
 function handleFQD(cmd) {
@@ -413,7 +679,7 @@ function handleFQD(cmd) {
   return lines.join('\n');
 }
 
-/* ---------------- FXP (المرحلة 6) ---------------- */
+/* ---------------- FXP ---------------- */
 function handleFXP(cmd) {
   if (cmd !== 'FXP') return 'FORMAT';
 
@@ -438,6 +704,138 @@ function handleFXP(cmd) {
   });
   lines.push(`TOTAL  ${fareInfo.total}  ${fareInfo.currency}`);
   lines.push(`BAGGAGE ALLOWANCE  ${fareInfo.baggageAllowance}`);
+
+  return lines.join('\n');
+}
+
+/* ---------------- TTP (دفعة 3 — سد فجوة متوسطة، إصدار تذكرة فعلي) ---------------- */
+function handleTTP(cmd) {
+  if (cmd !== 'TTP') return 'FORMAT';
+  const result = issueTicket();
+  return result.message;
+}
+
+/* ---------------- FXB (دفعة 3 — سد فجوة منخفضة، تسعير بديل/أرخص) ----------------
+   بعكس FXP اللي بيسعّر بنفس الفئة المحجوزة بالظبط، FXB بيرجّع أرخص
+   فئة متاحة على نفس المسار بغض النظر عن الفئة المحجوزة فعليًا —
+   "تحقق Best Buy" قبل ما توافق العميل على السعر النهائي. بيستخدم
+   نفس getFareQuote الموجودة بالفعل (مرتبة من الأرخص للأغلى)، من غير
+   أي كود تسعير جديد. */
+function handleFXB(cmd) {
+  if (cmd !== 'FXB') return 'FORMAT';
+
+  const currentPnr = getCurrentPNR();
+  if (currentPnr.segments.length === 0) {
+    return 'NO ITINERARY SEGMENTS';
+  }
+
+  const seg = currentPnr.segments[0];
+  const quote = getFareQuote(seg.origin, seg.destination);
+  if (!quote) {
+    return `NO FARES FOUND FOR CITY PAIR ${seg.origin}${seg.destination}`;
+  }
+
+  const cheapest = quote.fares[0];
+  const total = cheapest.baseFare + quote.totalTaxes;
+
+  const lines = [];
+  lines.push(`** BEST BUY PRICING - FXB **  ${seg.origin}-${seg.destination}  (${quote.currency})`);
+  lines.push('');
+  lines.push(`BOOKED CLASS: ${seg.bookingClass}   CHEAPEST AVAILABLE: ${cheapest.bookingClass}`);
+  lines.push(`FARE BASIS ${cheapest.fareBasis}`);
+  lines.push(`FARE   ${cheapest.baseFare}`);
+  lines.push(`TAX    ${quote.totalTaxes}`);
+  lines.push(`TOTAL  ${total}  ${quote.currency}`);
+  if (cheapest.bookingClass !== seg.bookingClass) {
+    lines.push('');
+    lines.push('NOTE: CHEAPEST CLASS DIFFERS FROM BOOKED CLASS - REBOOKING REQUIRED TO APPLY');
+  }
+
+  return lines.join('\n');
+}
+
+/* ---------------- DAC (دفعة 4 — فك تشفير مدينة/مطار) ----------------
+   ⚠ ملحوظة مهمة لازم Malik ياخد باله منها: parser.js لحد المرحلة 11
+   كان بيقرأ حقل iataCode بس من airportsData في كل مكان تاني، فمفيش
+   طريقة أعرف بيها أسماء الحقول التانية (الاسم/المدينة/الدولة)
+   الموجودة فعليًا في data/airports.json الحقيقي عندك. عشان كده
+   الدالة هنا بتجرب كذا اسم حقل شائع بالترتيب (name, cityNameAr,
+   cityName, city, nameEn)، ولو محدش منهم موجود بترجع رسالة صريحة
+   بدل ما تدّعي بيانات مش موجودة. لو حقولك اسمها حاجة تانية، التصحيح
+   سطر واحد بس في الدالة دي (تضيف اسم الحقل الصح لقايمة الأولوية). */
+const DAC_REGEX = /^DAC([A-Z]{3})$/;
+
+function handleDAC(cmd) {
+  const match = cmd.match(DAC_REGEX);
+  if (!match) return 'FORMAT';
+
+  const [, code] = match;
+  const airport = airportsData.find((a) => a.iataCode === code);
+  if (!airport) return `UNKNOWN CITY/AIRPORT ${code}`;
+
+  const nameCandidate =
+    airport.name || airport.cityNameAr || airport.cityName || airport.city || airport.nameEn || null;
+
+  if (!nameCandidate) {
+    return `DECODE DATA NOT AVAILABLE FOR ${code} - ADD A NAME FIELD TO airports.json`;
+  }
+
+  const countryCandidate = airport.country || airport.countryAr || '';
+  const lines = [];
+  lines.push(`** DECODE - DAC **  ${code}`);
+  lines.push(`${code}  ${nameCandidate}${countryCandidate ? `  ${countryCandidate}` : ''}`);
+  return lines.join('\n');
+}
+
+/* ---------------- DNA (دفعة 4 — فك تشفير شركة طيران) ---------------- */
+const DNA_REGEX = /^DNA([A-Z]{2})$/;
+
+function handleDNA(cmd) {
+  const match = cmd.match(DNA_REGEX);
+  if (!match) return 'FORMAT';
+
+  const [, code] = match;
+  const airline = airlinesData.find((a) => a.code === code || a.iataCode === code);
+  if (!airline) return `UNKNOWN AIRLINE ${code}`;
+
+  const nameCandidate = airline.name || airline.airlineName || airline.nameEn || null;
+  if (!nameCandidate) {
+    return `DECODE DATA NOT AVAILABLE FOR ${code} - ADD A NAME FIELD TO airlines.json`;
+  }
+
+  return `** DECODE - DNA **  ${code}  ${nameCandidate}`;
+}
+
+/* ---------------- FQN/FQR (دفعة 5 — قواعد وقيود التسعير) ----------------
+   بيشتغل على آخر Segment محجوز (زي FXP بالظبط)، وبيعرض قواعد السعر
+   لو موجودة في fares.json. لو مفيش حقل rules أصلًا للسعر ده، بيرجع
+   رسالة صريحة بدل ما يختلق قواعد وهمية — راجع تعليق getFareRules في
+   pricing.js للتفصيل الكامل. */
+function handleFQN(cmd) {
+  if (cmd !== 'FQN' && cmd !== 'FQR') return 'FORMAT';
+
+  const currentPnr = getCurrentPNR();
+  if (currentPnr.segments.length === 0) {
+    return 'NO ITINERARY SEGMENTS';
+  }
+
+  const seg = currentPnr.segments[0];
+  const rules = getFareRules(seg.origin, seg.destination, seg.bookingClass);
+
+  if (!rules) {
+    return `NO FARES FOUND FOR CITY PAIR ${seg.origin}${seg.destination}`;
+  }
+
+  if (!rules.available) {
+    return 'NO FARE RULES DATA AVAILABLE FOR THIS FARE';
+  }
+
+  const lines = [];
+  lines.push(`** FARE RULES - FQN **  ${seg.origin}-${seg.destination}  FARE BASIS ${rules.fareBasis}`);
+  lines.push('');
+  Object.entries(rules.rules).forEach(([key, value]) => {
+    lines.push(`${key.toUpperCase()}: ${value}`);
+  });
 
   return lines.join('\n');
 }
@@ -639,15 +1037,11 @@ function handleTI(cmd) {
 
 /* ================== المرحلة 8 — إدارة الطوابير ================== */
 
-/* ---------------- QT (Queue Table) ---------------- */
 function handleQT(cmd) {
   if (cmd !== 'QT') return 'FORMAT';
   return getQueueTableDisplay();
 }
 
-/* ---------------- QC (Queue Count) ----------------
-   QC + رقم طابور (بدون فئة، يجمع كل الفئات) أو QC + رقم + C + فئة
-   (فئة محددة)، زي QC8 أو QC1C2. */
 const QC_REGEX = /^QC(\d{1,2})(?:C(\d{1,2}))?$/;
 
 function handleQC(cmd) {
@@ -661,8 +1055,6 @@ function handleQC(cmd) {
   return getQueueCountDisplay(queueNumber, category);
 }
 
-/* ---------------- QS (Queue Start / browse) ----------------
-   القسم إلزامي هنا (بعكس QC) — QS1C0 مثلًا. */
 const QS_REGEX = /^QS(\d{1,2})C(\d{1,2})$/;
 
 function handleQS(cmd) {
@@ -676,11 +1068,6 @@ function handleQS(cmd) {
   return startQueueBrowse(queueNumber, category);
 }
 
-/* ---------------- QN و QI ----------------
-   لو وصلنا للدالتين دول أصلًا، فده معناه إننا مش جوه وضع تصفح طابور
-   (main.js بيوجّه لـ handleQueueModeInput في queues.js مباشرة وقت ما
-   الوضع نشط، قبل ما نوصل لـ parseCommand() خالص — راجع تعليق main.js).
-   يعني وصولنا هنا معناه أكيد إن مفيش تصفح نشط، فالرد ثابت دايمًا. */
 function handleQN(cmd) {
   if (cmd !== 'QN') return 'FORMAT';
   return 'NOT IN QUEUE MODE';
@@ -691,7 +1078,66 @@ function handleQI(cmd) {
   return 'NOT IN QUEUE MODE';
 }
 
-/* ---------------- QE (Queue Entry) ---------------- */
+/* ---------------- QD (دفعة 3 — سد فجوة متوسطة، حذف مباشر من طابور) ---------------- */
+const QD_REGEX = /^QD(\d{1,2})\/([A-Z]{6})$/;
+
+function handleQD(cmd) {
+  const match = cmd.match(QD_REGEX);
+  if (!match) return 'FORMAT';
+
+  const [, queueNumStr, recordLocator] = match;
+  const queueNumber = parseInt(queueNumStr, 10);
+
+  return deletePnrFromQueue(queueNumber, recordLocator);
+}
+
+/* ---------------- SM (دفعة 6 — عرض خريطة مقعد) ---------------- */
+function handleSM(cmd) {
+  if (cmd !== 'SM') return 'FORMAT';
+
+  const currentPnr = getCurrentPNR();
+  if (currentPnr.segments.length === 0) return 'NO ITINERARY SEGMENTS';
+
+  const seg = currentPnr.segments[0];
+  const map = getSeatMapDisplay(seg.aircraftType);
+  if (!map) return 'NO SEATMAP DATA FOR THIS AIRCRAFT TYPE';
+
+  const lines = [];
+  lines.push(`** SEATMAP - SM **  ${seg.airlineCode} ${seg.flightNumber}  ${map.aircraftType}`);
+  lines.push('');
+  map.rows.forEach((row) => {
+    const seatsText = Object.entries(row.seats)
+      .map(([letter, status]) => `${letter}${status === 'OCCUPIED' ? 'X' : '_'}`)
+      .join(' ');
+    lines.push(`ROW ${String(row.row).padStart(2, ' ')} (${row.class})  ${seatsText}`);
+  });
+  lines.push('');
+  lines.push('LEGEND: _ = AVAILABLE, X = OCCUPIED');
+
+  return lines.join('\n');
+}
+
+/* ---------------- ST (دفعة 6 — اختيار/طلب مقعد) ---------------- */
+const ST_REGEX = /^ST(\d{1,2})([A-Z])$/;
+
+function handleST(cmd) {
+  const match = cmd.match(ST_REGEX);
+  if (!match) return 'FORMAT';
+
+  const [, rowStr, seatLetter] = match;
+  const rowNumber = parseInt(rowStr, 10);
+
+  const currentPnr = getCurrentPNR();
+  if (currentPnr.segments.length === 0) return 'NO ITINERARY SEGMENTS';
+
+  const seg = currentPnr.segments[0];
+  const seatResult = selectSeat(seg.aircraftType, rowNumber, seatLetter);
+  if (!seatResult.success) return seatResult.message;
+
+  const result = setSelectedSeat(seatResult.seatLabel);
+  return result.message;
+}
+
 const QE_REGEX = /^QE(\d{1,2})$/;
 
 function handleQE(cmd) {
@@ -701,8 +1147,6 @@ function handleQE(cmd) {
   const [, queueNumStr] = match;
   const queueNumber = parseInt(queueNumStr, 10);
 
-  // راجع الشرح الكامل أعلى الملف: لو فيه لقطة PNR اتعمله ER بنجاح،
-  // نستخدمها. لو لأ، نرجع لفحص الـ PNR الحالي بنفس شيكات ER الخمسة.
   if (!lastCompletedPnr) {
     const currentPnr = getCurrentPNR();
     if (currentPnr.segments.length === 0) return 'NO ITINERARY SEGMENTS';
