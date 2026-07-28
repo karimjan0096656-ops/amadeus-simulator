@@ -1,23 +1,3 @@
-/*
-  pricing.js — محرك حساب الأسعار والضرائب وحد الأمتعة (المرحلة 6)
-
-  فصل المسؤوليات بنفس روح pnr.js بالظبط: parser.js هو اللي بيتحقق من
-  صياغة الأمر وكود المطارات ويستدعي الدوال هنا، والدوال هنا بترجع
-  بيانات جاهزة (كائنات JS) مش نصوص معروضة على الشاشة — تنسيق الشاشة
-  شغل parser.js زي ما هو بالظبط في handleAN (نفس النمط الموجود بالفعل
-  في الكود، مفيش نمط جديد اتلخترع هنا).
-
-  ⚠ ملحوظة مهمة لازم Malik ياخد باله منها (زي ملاحظات parser.js/pnr.js/
-  errors.js في المراحل اللي فاتت):
-  initPricing(data) المفروض تتنادى من main.js بعد تحميل data/fares.json.
-  سبك المرحلة 6 (قسم 5) قال إن "main.js مفيش أي تعديل متوقع فيه" — ده
-  مش دقيق: من غير إضافة fetch لـ data/fares.json ونداء initPricing()
-  في main.js، هتفضل faresData هنا فاضية للأبد، وأي أمر FQD أو FXP هيرجع
-  "مفيش أسعار" حتى لو المسار موجود فعلًا في fares.json. عشان كده اتعمل
-  تعديل صغير وضروري في main.js (إضافة بس، مفيش حذف) — راجع main.js
-  وشوف تعليق المرحلة 6 هناك.
-*/
-
 let faresData = [];
 
 export function initPricing(data) {
@@ -32,8 +12,6 @@ function sumTaxes(taxes) {
   return taxes.reduce((sum, t) => sum + t.amount, 0);
 }
 
-// بترجع كل فئات الحجز على مسار معين، مرتبة من الأرخص للأغلى (Best Buy).
-// بترجع null لو المسار مش موجود خالص في fares.json.
 export function getFareQuote(origin, destination) {
   const route = findRoute(origin, destination);
   if (!route) return null;
@@ -51,9 +29,29 @@ export function getFareQuote(origin, destination) {
   };
 }
 
-// بترجع سعر فئة حجز واحدة بالظبط على مسار معين (مستخدمة في FXP بعد
-// ما يبقى فيه Segment محجوز فعلًا بفئة معينة). بترجع null لو المسار
-// مش موجود، أو الفئة دي بالذات مش متسعّرة على المسار ده.
+// === إضافة المرحلة 11 (دفعة 5 — سد فجوة ❌ FQN/FQR): عرض قواعد
+// وقيود السعر (استرداد/تغيير/إلغاء). ⚠ ملحوظة مهمة: fares.json
+// الحالي (حسب ما اتراجع في المرحلة 6) مفيهوش حقل "rules" أصلًا —
+// الحقول الموجودة بس bookingClass/fareBasis/baseFare/baggageAllowance.
+// عشان كده الدالة هنا مصممة تتعامل بأمانة مع الحالتين: لو fare.rules
+// موجود (تمت إضافته لاحقًا في fares.json)، بتعرضه؛ لو مش موجود،
+// بترجع null صراحة بدل ما تختلق قواعد وهمية.
+export function getFareRules(origin, destination, bookingClass) {
+  const route = findRoute(origin, destination);
+  if (!route) return null;
+
+  const fare = route.fares.find((f) => f.bookingClass === bookingClass);
+  if (!fare) return null;
+
+  if (!fare.rules) return { available: false };
+
+  return {
+    available: true,
+    fareBasis: fare.fareBasis,
+    rules: fare.rules
+  };
+}
+
 export function getFareForBookingClass(origin, destination, bookingClass) {
   const route = findRoute(origin, destination);
   if (!route) return null;
