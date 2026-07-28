@@ -24,6 +24,14 @@
      تكامل جديدة هنا خالص — بتمر من نفس مسار parseCommand() العادي
      زي أي أمر تاني (isRegularCommand = true)، فبتستفيد تلقائيًا من
      محرك تصحيح الأخطاء (errors.js) الموجود بالفعل من المرحلة 5.
+
+  === إضافة المرحلة 10 (التكيف مع الأداء) ===
+  إضافة واحدة بس هنا: نداء initPerformance() بعد initCoaching()
+  مباشرة. الملف ده مش محتاج تحميل أي JSON جديد (على عكس المراحل
+  اللي قبله) — performance.js بيحمّل إحصائياته المحفوظة بنفسه من
+  storage.js داخليًا، فمفيش داعي لأي fetch إضافي هنا ولا أي تغيير
+  في Promise.all. باقي التكامل كله (تسجيل النتائج، حساب مستوى
+  التكيف) بيحصل جوه coaching.js زي ما هو موضح في تعليقات الملف ده.
 */
 
 import { initParser, normalizeInput, parseCommand } from './parser.js';
@@ -33,6 +41,7 @@ import { initPricing } from './pricing.js';
 import { initAncillary } from './ancillary.js';
 import { initQueues, isQueueModeActive, handleQueueModeInput } from './queues.js'; // إضافة المرحلة 8
 import { initCoaching, isCoachingKeyword, handleCoachingKeyword, onCommandProcessed } from './coaching.js'; // إضافة المرحلة 9
+import { initPerformance } from './performance.js'; // إضافة المرحلة 10
 const outputEl = document.getElementById('output');
 const inputEl = document.getElementById('command-input');
 
@@ -90,6 +99,7 @@ async function loadData() {
     initPricing(faresData);
     initAncillary({ hotels: hotelsData, cars: carsData, ssr: ssrData, timatic: timaticData });
     initCoaching(scenariosData); // إضافة المرحلة 9
+    initPerformance(); // إضافة المرحلة 10 — تحميل الإحصائيات المحفوظة (لو موجودة) عبر storage.js
 
     inputEl.disabled = false;
     inputEl.focus();
@@ -114,7 +124,6 @@ function handleSubmit() {
   } else if (normalized === 'LEVELTEST') {
     response = startLevelTest();
   } else if (isQueueModeActive()) {
-  } else if (isQueueModeActive()) {
     // === إضافة المرحلة 8 ===
     response = handleQueueModeInput(normalized);
   } else if (isCoachingKeyword(normalized)) {
@@ -133,7 +142,7 @@ function handleSubmit() {
       errorFlow.forEach((line) => appendLine(line, 'error-flow-line'));
     }
 
-    // === إضافة المرحلة 9 ===
+    // === إضافة المرحلة 9 (+ تكيف المرحلة 10 جوه coaching.js) ===
     const coachingHint = onCommandProcessed(normalized, response);
     if (coachingHint) {
       coachingHint.forEach((line) => appendLine(line, 'coaching-line'));
