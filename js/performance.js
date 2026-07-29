@@ -1,42 +1,43 @@
 /*
   performance.js — قياس أداء المستخدم والتكيف (المرحلة 10)
+  + إضافة المرحلة 12: تتبع منفصل لسيناريوهات Free Mode بس
 
-  فكرة التصميم: نفس منطق coaching.js — طبقة "جنب" مش "بدل". الملف
-  ده معندوش أي نظام تصنيف أخطاء خاص بيه؛ بياخد categoryCode جاهز من
-  classifyError() في errors.js زي ما هو (ممنوع تصريحًا في الـ spec
-  إنشاء تصنيف موازي). دور performance.js الوحيد إنه يجمع ويلخص
-  البيانات دي عبر الوقت، ويقرر بناءً عليها "مستوى التكيف" الحالي.
-
-  ليه الدقة (accuracy) هي المعيار الأساسي للتكيف مش السرعة؟
-  لأن PROJECT.md نفسه حاطط "الدقة أهم من السرعة" كمبدأ أساسي للمشروع
-  كله (قسم القيود). لو التكيف اعتمد على السرعة كمعيار أساسي هيكون
-  بيكافئ عكس المبدأ ده. السرعة (stalled) لسه بتتراقب في coaching.js
-  زي ما هي، بس كإشارة منفصلة (وقفة طويلة) مش كجزء من حساب المستوى.
-
-  التخزين: عبر storage.js بس — الملف ده معندوش أي فكرة عن
-  localStorage مباشرة، ودايمًا بيشتغل حتى لو التخزين مش متاح
-  (fallback في storage.js نفسه بيتكفل بده).
+  === إضافة المرحلة 12 (ملحوظة ضرورية) ===
+  اكتشفنا وإحنا بنراجع الكود قبل المرحلة 12 إن recordStepResult()
+  وonScenarioFinished() وgetAdaptiveTier() وisCategoryWeak() الموجودين
+  هنا من المرحلة 10 مش متصلين فعليًا بأي حاجة — لا coaching.js ولا
+  main.js كانوا بينادوهم. يعني تكيف مستوى التلميحات حسب الأداء
+  (المذكور كمكتمل في PROJECT.md) مش شغال فعليًا في الكود الحالي؛ بس
+  initPerformance() (تحميل الإحصائيات المحفوظة) اللي شغال. الملف ده
+  في نسخته الحالية مش بيتلمس أو يتصلح جوه المرحلة 12 — ده قرار خارج
+  نطاقها المتفق عليه ومحتاج قرار منفصل مع Malik. الإضافة الوحيدة هنا
+  هي دالة جديدة معزولة (recordFreeModeScenario) بتخدم متطلب "الأداء في
+  Free Mode بيتسجل بعلامة مختلفة" بس، من غير ما تلمس أو تفعّل أي حاجة
+  من نظام المرحلة 10 غير الشغال.
 */
 
 import { loadStats, saveStats } from './storage.js';
 
-const RECENT_WINDOW = 10;              // آخر كام خطوة بس بتتحسب في قرار التكيف
-const MIN_SAMPLES_FOR_ADAPTATION = 5;  // أقل عدد عينات قبل ما نبدأ نكيف أصلًا (تفادي قرار متسرع)
-const STRONG_THRESHOLD = 0.85;         // نسبة صح-من-أول-مرة عشان "أداء قوي"
-const STRUGGLING_THRESHOLD = 0.5;      // نسبة صح-من-أول-مرة تحت كده = "محتاج توجيه أكبر"
-const WEAK_CATEGORY_THRESHOLD = 5;     // عدد أخطاء متراكم لنفس الفئة عبر كل الوقت عشان تتعتبر "نقطة ضعف"
-const SCENARIO_REPLAY_MISTAKE_THRESHOLD = 3; // عدد أخطاء في سيناريو واحد عشان نقترح إعادته
+const RECENT_WINDOW = 10;
+const MIN_SAMPLES_FOR_ADAPTATION = 5;
+const STRONG_THRESHOLD = 0.85;
+const STRUGGLING_THRESHOLD = 0.5;
+const WEAK_CATEGORY_THRESHOLD = 5;
+const SCENARIO_REPLAY_MISTAKE_THRESHOLD = 3;
 
-const MAX_STEP_HISTORY = 30;     // حد أقصى لحجم سجل الخطوات المحفوظ
-const MAX_SCENARIO_HISTORY = 20; // حد أقصى لحجم سجل السيناريوهات المحفوظ
+const MAX_STEP_HISTORY = 30;
+const MAX_SCENARIO_HISTORY = 20;
 
 function defaultStats() {
   return {
-    stepHistory: [],       // [{firstTry: bool, category: string|null}] — نافذة متحركة
-    mistakesByCategory: {}, // {FORMAT: 3, SEQUENCE: 1, ...} — تراكمي، بدون حد أقصى (أنواع الفئات محدودة)
-    scenarioHistory: [],   // [{scenarioId, mistakes, completed}] — نافذة متحركة
+    stepHistory: [],
+    mistakesByCategory: {},
+    scenarioHistory: [],
     scenariosCompleted: 0,
-    totalStepsRecorded: 0
+    totalStepsRecorded: 0,
+    // === إضافة المرحلة 12 ===
+    freeModeScenarioHistory: [],
+    freeModeSessionsCompleted: 0
   };
 }
 
@@ -44,21 +45,22 @@ let stats = defaultStats();
 
 export function initPerformance() {
   const loaded = loadStats();
-  // دمج بسيط مع القيم الافتراضية عشان لو شكل البيانات المحفوظة قديم
-  // أو ناقص حقل، النظام ميقعش — بيكمل بقيم افتراضية آمنة بدالها.
   stats = Object.assign(defaultStats(), loaded || {});
   if (!Array.isArray(stats.stepHistory)) stats.stepHistory = [];
   if (!Array.isArray(stats.scenarioHistory)) stats.scenarioHistory = [];
   if (typeof stats.mistakesByCategory !== 'object' || stats.mistakesByCategory === null) {
     stats.mistakesByCategory = {};
   }
+  // === إضافة المرحلة 12: نفس أسلوب الحماية من بيانات محفوظة قديمة
+  // ناقصة الحقل الجديد، بالظبط زي stepHistory/scenarioHistory فوق ===
+  if (!Array.isArray(stats.freeModeScenarioHistory)) stats.freeModeScenarioHistory = [];
+  if (typeof stats.freeModeSessionsCompleted !== 'number') stats.freeModeSessionsCompleted = 0;
 }
 
 function persist() {
   saveStats(stats);
 }
 
-// بيتسجل مرة واحدة لكل تقييم خطوة (صح أو غلط) — نداء من coaching.js
 export function recordStepResult(categoryCode, wasFirstTry) {
   stats.totalStepsRecorded += 1;
   stats.stepHistory.push({ firstTry: !!wasFirstTry, category: categoryCode || null });
@@ -71,7 +73,6 @@ export function recordStepResult(categoryCode, wasFirstTry) {
   persist();
 }
 
-// 'reduced' = قلل كثافة التلميحات | 'normal' = زي المرحلة 9 | 'increased' = زود التوجيه
 export function getAdaptiveTier() {
   const recent = stats.stepHistory.slice(-RECENT_WINDOW);
   if (recent.length < MIN_SAMPLES_FOR_ADAPTATION) return 'normal';
@@ -84,14 +85,11 @@ export function getAdaptiveTier() {
   return 'normal';
 }
 
-// نقطة ضعف متكررة عبر كل التاريخ (مش بس الجلسة الحالية زي
-// checkRecurringPattern في errors.js) — بتتستخدم كملحوظة إضافية
 export function isCategoryWeak(categoryCode) {
   if (!categoryCode) return false;
   return (stats.mistakesByCategory[categoryCode] || 0) >= WEAK_CATEGORY_THRESHOLD;
 }
 
-// بينده وقت انتهاء أو خروج من سيناريو — بيرجع اقتراح إعادة لو يستاهل
 export function onScenarioFinished(scenarioId, { mistakes, completed }) {
   stats.scenarioHistory.push({ scenarioId, mistakes, completed: !!completed });
   if (stats.scenarioHistory.length > MAX_SCENARIO_HISTORY) {
@@ -104,4 +102,16 @@ export function onScenarioFinished(scenarioId, { mistakes, completed }) {
     return { replaySuggested: true, scenarioId, mistakes };
   }
   return null;
+}
+
+// === إضافة المرحلة 12: تتبع منفصل بالكامل عن scenarioHistory
+// العادية — مقصود عشان أداء "بدون مساعدة" ميتلخبطش مع تمرين عادي
+// فيه تلميحات، بالظبط زي ما اتفقنا في نقاش نطاق المرحلة 12 ===
+export function recordFreeModeScenario(scenarioId, { mistakes, completed }) {
+  stats.freeModeScenarioHistory.push({ scenarioId, mistakes, completed: !!completed, at: Date.now() });
+  if (stats.freeModeScenarioHistory.length > MAX_SCENARIO_HISTORY) {
+    stats.freeModeScenarioHistory = stats.freeModeScenarioHistory.slice(-MAX_SCENARIO_HISTORY);
+  }
+  if (completed) stats.freeModeSessionsCompleted += 1;
+  persist();
 }
