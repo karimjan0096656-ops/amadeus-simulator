@@ -46,14 +46,46 @@ body {
    (محرك تصحيح الأخطاء الذكي). */
 .response-line {
   color: #7fdbff;
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: plaintext;
 }
 
 .command-line {
   color: #e0e0e0;
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: plaintext;
 }
 
 .blank-line {
   height: 1.4em;
+}
+
+/* === إصلاح المرحلة 13: الفصل بين العربي والإنجليزي ===
+   أي سطر عربي (تلميحات، شرح، رسايل السيناريوهات) لازم ياخد
+   الكلاس ده عشان يتقرأ من اليمين للشمال صح، حتى لو فيه كلمة
+   إنجليزية متضمنة جواه (زي اسم أمر). unicode-bidi: plaintext
+   بتخلي المتصفح يحدد اتجاه الفقرة من أول حرف قوي فيها، وده
+   بيحسّن الترتيب العام. */
+.ar-line,
+.coaching-line,
+.error-flow-line {
+  direction: rtl;
+  text-align: right;
+  unicode-bidi: plaintext;
+}
+
+/* === إصلاح المرحلة 13: عزل أي كلمة/أمر إنجليزي متضمن جوه جملة
+   عربية ===
+   لازم في main.js أي أمر أماديوس بيتذكر جوه جملة عربية (زي
+   "جرب أمر AN بصيغة...") يتحط جوه <bdi dir="ltr"> بدل ما يفضل
+   نص عادي. الكلاس ده يضمن العزل حتى لو المتصفح قديم. */
+bdi,
+.ltr-embed {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-family: 'Courier New', monospace;
 }
 
 #input-line {
