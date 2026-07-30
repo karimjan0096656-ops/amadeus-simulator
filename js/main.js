@@ -32,6 +32,32 @@
   storage.js داخليًا، فمفيش داعي لأي fetch إضافي هنا ولا أي تغيير
   في Promise.all. باقي التكامل كله (تسجيل النتائج، حساب مستوى
   التكيف) بيحصل جوه coaching.js زي ما هو موضح في تعليقات الملف ده.
+
+  === إصلاح المرحلة 13 (الفصل بين العربي والإنجليزي في العرض) ===
+  السبب الحقيقي للمشكلة اللي واجهها المستخدم: كل ردود
+  handleCoachingKeyword() (قايمة السيناريوهات، رسالة بدء سيناريو،
+  رسايل COACHING/FREEMODE) كانت بتتحط في نفس كلاس 'response-line'
+  المستخدم لرد parseCommand() الإنجليزي الخام — يعني نص عربي طويل
+  فيه أكواد أماديوس متضمنة كان بياخد نفس معاملة "سطر أماديوس خام"،
+  من غير أي عزل اتجاه. وكمان appendLine() كانت بتستخدم textContent
+  بس، يعني حتى لو حطينا وسم <bdi> في النص هيتعرض كنص عادي مكتوب حرفيًا
+  مش كوسم HTML فعلي.
+
+  الإصلاح (تغييرين بس، مفيش أي لمس لمنطق التحميل أو الأحداث):
+  1) appendArabicLine() جديدة — زي appendLine() بالظبط، لكن بتستخدم
+     innerHTML بعد ما تعزل أي كود/كلمة إنجليزية متضمنة جوه النص
+     بوسم <bdi dir="ltr"> فعلي (عبر wrapLatinTokens()).
+  2) في handleSubmit(): أي رد مصدره LEVELTEST أو handleCoachingKeyword
+     (يعني نص إرشادي عربي، مش رد أماديوس خام) بقى بياخد كلاس
+     'coaching-line' وبيتعرض عبر appendArabicLine بدل appendLine.
+     نفس المعاملة اتطبقت على تلميحات onCommandProcessed ورسايل
+     handleErrorFlow (كانوا أصلًا فيهم نفس المشكلة المحتملة).
+
+     ملحوظة: مسار isQueueModeActive() اتسيب زي ما هو من غير تغيير —
+     مخرجاته أساسًا بيانات أماديوس (أكواد طوابير، أرقام حجوزات)،
+     ومعنديش queues.js عشان أتأكد فعليًا من نسبة النص العربي فيه.
+     لو المستخدم لاحظ نفس مشكلة الاختلاط هناك، محتاجين نراجع
+     queues.js بنفس الأسلوب ده تحديدًا.
 */
 
 import { initParser, normalizeInput, parseCommand } from './parser.js';
@@ -52,10 +78,38 @@ function appendLine(text, className) {
   outputEl.appendChild(div);
 }
 
-function appendBlock(text, className) {
+// === إصلاح المرحلة 13 ===
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+// === إصلاح المرحلة 13: عزل أي كود/كلمة إنجليزية متضمنة جوه جملة
+// عربية بوسم <bdi dir="ltr"> فعلي، عشان المتصفح يقرأها كوحدة
+// منفصلة بمعزل عن اتجاه النص العربي المحيط بيها ===
+function wrapLatinTokens(text) {
+  return escapeHtml(text).replace(
+    /[A-Za-z0-9][A-Za-z0-9/\-*.]*/g,
+    (match) => `<bdi dir="ltr">${match}</bdi>`
+  );
+}
+
+// === إصلاح المرحلة 13: نسخة appendLine مخصصة للنص العربي (إرشاد/
+// سيناريوهات/أخطاء) — بتستخدم innerHTML عشان وسم bdi يتعرض كوسم
+// فعلي، مش كنص حرفي ===
+function appendArabicLine(text, className) {
+  const div = document.createElement('div');
+  if (className) div.className = className;
+  div.innerHTML = wrapLatinTokens(text);
+  outputEl.appendChild(div);
+}
+
+function appendBlock(text, className, isArabic) {
   String(text)
     .split('\n')
-    .forEach((line) => appendLine(line, className));
+    .forEach((line) => (isArabic ? appendArabicLine(line, className) : appendLine(line, className)));
 }
 
 function scrollToBottom() {
@@ -118,34 +172,40 @@ function handleSubmit() {
 
   let response;
   let isRegularCommand = false;
+  let isArabicResponse = false; // === إصلاح المرحلة 13 ===
 
   if (isTestActive()) {
     response = handleLevelTestInput(normalized);
+    isArabicResponse = true; // === إصلاح المرحلة 13: نصوص LEVELTEST إرشادية بالعربي ===
   } else if (normalized === 'LEVELTEST') {
     response = startLevelTest();
+    isArabicResponse = true; // === إصلاح المرحلة 13 ===
   } else if (isQueueModeActive()) {
-    // === إضافة المرحلة 8 ===
+    // === إضافة المرحلة 8 (بدون تغيير — راجع الملحوظة أعلى الملف) ===
     response = handleQueueModeInput(normalized);
   } else if (isCoachingKeyword(normalized)) {
     // === إضافة المرحلة 9 ===
     response = handleCoachingKeyword(normalized);
+    isArabicResponse = true; // === إصلاح المرحلة 13: قايمة السيناريوهات ورسايل الكوتشينج عربي ===
   } else {
     response = parseCommand(normalized);
     isRegularCommand = true;
   }
 
-  appendBlock(response, 'response-line');
+  appendBlock(response, isArabicResponse ? 'coaching-line' : 'response-line', isArabicResponse);
 
   if (isRegularCommand) {
     const errorFlow = handleErrorFlow(response, normalized);
     if (errorFlow) {
-      errorFlow.forEach((line) => appendLine(line, 'error-flow-line'));
+      // === إصلاح المرحلة 13: appendArabicLine بدل appendLine ===
+      errorFlow.forEach((line) => appendArabicLine(line, 'error-flow-line'));
     }
 
     // === إضافة المرحلة 9 (+ تكيف المرحلة 10 جوه coaching.js) ===
     const coachingHint = onCommandProcessed(normalized, response);
     if (coachingHint) {
-      coachingHint.forEach((line) => appendLine(line, 'coaching-line'));
+      // === إصلاح المرحلة 13: appendArabicLine بدل appendLine ===
+      coachingHint.forEach((line) => appendArabicLine(line, 'coaching-line'));
     }
   }
 
