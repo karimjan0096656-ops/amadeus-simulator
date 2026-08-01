@@ -1,19 +1,34 @@
 /*
   performance.js — قياس أداء المستخدم والتكيف (المرحلة 10)
   + إضافة المرحلة 12: تتبع منفصل لسيناريوهات Free Mode بس
+  + إضافة المرحلة 14: تفعيل حقيقي لـ recordStepResult/onScenarioFinished
+    (كانوا معلّقين من المرحلة 10) + دوال جديدة لحساب "الإتقان" اللي
+    بيغذّي نظام مسار المهام الموجّه (Guided Mission Progression) في
+    coaching.js.
 
-  === إضافة المرحلة 12 (ملحوظة ضرورية) ===
-  اكتشفنا وإحنا بنراجع الكود قبل المرحلة 12 إن recordStepResult()
-  وonScenarioFinished() وgetAdaptiveTier() وisCategoryWeak() الموجودين
-  هنا من المرحلة 10 مش متصلين فعليًا بأي حاجة — لا coaching.js ولا
-  main.js كانوا بينادوهم. يعني تكيف مستوى التلميحات حسب الأداء
-  (المذكور كمكتمل في PROJECT.md) مش شغال فعليًا في الكود الحالي؛ بس
-  initPerformance() (تحميل الإحصائيات المحفوظة) اللي شغال. الملف ده
-  في نسخته الحالية مش بيتلمس أو يتصلح جوه المرحلة 12 — ده قرار خارج
-  نطاقها المتفق عليه ومحتاج قرار منفصل مع Malik. الإضافة الوحيدة هنا
-  هي دالة جديدة معزولة (recordFreeModeScenario) بتخدم متطلب "الأداء في
-  Free Mode بيتسجل بعلامة مختلفة" بس، من غير ما تلمس أو تفعّل أي حاجة
-  من نظام المرحلة 10 غير الشغال.
+  === إضافة المرحلة 14 (ملحوظات ضرورية) ===
+  1) onScenarioFinished() بقت بتاخد باراميتر تالت اختياري: hintsUsed.
+     ده مش تغيير كاسر — أي نداء قديم من غير الباراميتر ده هيفضل شغال
+     بالظبط زي الأول (بيتسجل hintsUsed: 0 تلقائيًا). الإضافة دي
+     ضرورية عشان "نجاح نظيف" (Clean Run) في نظام الإتقان الجديد
+     يتحسب صح — مش بس "خلص من غير أخطاء"، لازم كمان "من غير ما ياخد
+     تلميحات أكتر من الحد المسموح".
+
+  2) getCleanRunCount(scenarioId, maxHintsAllowed) — دالة جديدة
+     للقراءة بس، بتحسب عدد مرات النجاح "النظيف" (completed=true +
+     mistakes=0 + hintsUsed <= الحد المسموح) لسيناريو معين من
+     scenarioHistory المحفوظة بالفعل. دي اللي بتقرر فتح/قفل
+     السيناريو التالي في coaching.js.
+
+  3) hasSeenExample() / markExampleSeen() — تتبع بسيط لمعرفة هل
+     المتدرب شاف "المثال المحلول" (exampleWalkthroughAr) بتاع سيناريو
+     معين قبل كده ولا لأ، عشان يتعرض مرة واحدة بس قبل أول محاولة
+     حقيقية. تخزين مستقل تمامًا عن stepHistory/scenarioHistory —
+     مجرد قايمة IDs بسيطة.
+
+  4) recordStepResult() نفسها من غير أي تغيير في السلوك أو التوقيع —
+     بس دلوقتي فعليًا بتتنادى من coaching.js (قسم الشرح جوه الملف
+     ده) بدل ما تفضل معلّقة زي من المرحلة 10 للمرحلة 13.
 */
 
 import { loadStats, saveStats } from './storage.js';
@@ -37,7 +52,9 @@ function defaultStats() {
     totalStepsRecorded: 0,
     // === إضافة المرحلة 12 ===
     freeModeScenarioHistory: [],
-    freeModeSessionsCompleted: 0
+    freeModeSessionsCompleted: 0,
+    // === إضافة المرحلة 14 ===
+    exampleSeenScenarioIds: []
   };
 }
 
@@ -55,6 +72,8 @@ export function initPerformance() {
   // ناقصة الحقل الجديد، بالظبط زي stepHistory/scenarioHistory فوق ===
   if (!Array.isArray(stats.freeModeScenarioHistory)) stats.freeModeScenarioHistory = [];
   if (typeof stats.freeModeSessionsCompleted !== 'number') stats.freeModeSessionsCompleted = 0;
+  // === إضافة المرحلة 14: نفس أسلوب الحماية بالظبط ===
+  if (!Array.isArray(stats.exampleSeenScenarioIds)) stats.exampleSeenScenarioIds = [];
 }
 
 function persist() {
@@ -90,8 +109,11 @@ export function isCategoryWeak(categoryCode) {
   return (stats.mistakesByCategory[categoryCode] || 0) >= WEAK_CATEGORY_THRESHOLD;
 }
 
-export function onScenarioFinished(scenarioId, { mistakes, completed }) {
-  stats.scenarioHistory.push({ scenarioId, mistakes, completed: !!completed });
+// === تعديل المرحلة 14: باراميتر تالت اختياري hintsUsed (افتراضيًا 0)
+// — إضافة فقط، مفيش أي تغيير في السلوك القديم لو محدش بعت الباراميتر
+// ده ===
+export function onScenarioFinished(scenarioId, { mistakes, completed, hintsUsed = 0 }) {
+  stats.scenarioHistory.push({ scenarioId, mistakes, completed: !!completed, hintsUsed });
   if (stats.scenarioHistory.length > MAX_SCENARIO_HISTORY) {
     stats.scenarioHistory = stats.scenarioHistory.slice(-MAX_SCENARIO_HISTORY);
   }
@@ -114,4 +136,31 @@ export function recordFreeModeScenario(scenarioId, { mistakes, completed }) {
   }
   if (completed) stats.freeModeSessionsCompleted += 1;
   persist();
+}
+
+// === إضافة المرحلة 14: عدد مرات "النجاح النظيف" لسيناريو معين —
+// completed + صفر أخطاء + تلميحات في حدود المسموح. دي اللي بتقرر
+// فتح السيناريو التالي في مسار المهام الموجّه (coaching.js) ===
+export function getCleanRunCount(scenarioId, maxHintsAllowed) {
+  const limit = typeof maxHintsAllowed === 'number' ? maxHintsAllowed : Infinity;
+  return stats.scenarioHistory.filter(
+    (entry) =>
+      entry.scenarioId === scenarioId &&
+      entry.completed &&
+      entry.mistakes === 0 &&
+      (entry.hintsUsed || 0) <= limit
+  ).length;
+}
+
+// === إضافة المرحلة 14: هل المتدرب شاف المثال المحلول بتاع السيناريو
+// ده قبل كده؟ ===
+export function hasSeenExample(scenarioId) {
+  return stats.exampleSeenScenarioIds.includes(scenarioId);
+}
+
+export function markExampleSeen(scenarioId) {
+  if (!stats.exampleSeenScenarioIds.includes(scenarioId)) {
+    stats.exampleSeenScenarioIds.push(scenarioId);
+    persist();
+  }
 }
