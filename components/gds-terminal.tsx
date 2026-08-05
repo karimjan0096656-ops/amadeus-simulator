@@ -39,6 +39,15 @@ export function GdsTerminal({ seed, onSeedConsumed, onCommand, welcome, macros =
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
   }, [lines])
 
+  useEffect(() => {
+    if (seed) {
+      setInput(seed.toUpperCase())
+      onSeedConsumed?.()
+      inputRef.current?.focus()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed])
+
   const submit = useCallback(
     (raw: string) => {
       const value = raw.trim()
